@@ -241,6 +241,68 @@ uninstall_bot() {
     read
 }
 
+# Konfigurasiýa faýlyny düzet
+fix_env_file() {
+  CONFIG_FILE="$INSTALL_DIR/.env"
+  
+  echo -e "${YELLOW}Konfigurasiýa faýly näsazlygy düzedilýär...${NC}"
+  echo -e "${RED}Görünşine görä, .env faýly bozulan bolup biler.${NC}"
+  echo -e "${YELLOW}Faýl täzeden döredilýär...${NC}"
+  
+  # Bar bolan .env faýlyny ätiýaçla
+  if [ -f "$CONFIG_FILE" ]; then
+    echo -ne "${YELLOW}Bar bolan .env faýly ätiýaçlanýar...${NC} "
+    cp $CONFIG_FILE ${CONFIG_FILE}.backup.$(date +%Y%m%d%H%M%S) &
+    PID=$!
+    spin $PID
+    wait $PID
+    echo -e " ${GREEN}✓${NC}"
+  fi
+  
+  # Ulanyjydan täze konfigurasiýa üçin maglumatlary soramak
+  echo -e "${YELLOW}Täze konfigurasiýa üçin gerekli maglumatlary giriziň:${NC}"
+  
+  # Bot Token
+  read -p "Telegram Bot Token (boş goýsaňyz, TOKEN_PLACEHOLDER ulanyljakdyr): " BOT_TOKEN
+  if [ -z "$BOT_TOKEN" ]; then
+    BOT_TOKEN="TOKEN_PLACEHOLDER"
+  fi
+  
+  # MongoDB URI
+  read -p "MongoDB URI (boş goýsaňyz, 'mongodb://localhost:27017' ulanyljakdyr): " MONGODB_URI
+  if [ -z "$MONGODB_URI" ]; then
+    MONGODB_URI="mongodb://localhost:27017"
+  fi
+  
+  # Database ady
+  read -p "MongoDB maglumat bazasynyň ady (boş goýsaňyz, 'chatbot_db' ulanyljakdyr): " DB_NAME
+  if [ -z "$DB_NAME" ]; then
+    DB_NAME="chatbot_db"
+  fi
+  
+  # Admin ID
+  read -p "Telegram Admin ID (boş goýsaňyz, '123456789' ulanyljakdyr): " ADMIN_ID
+  if [ -z "$ADMIN_ID" ]; then
+    ADMIN_ID="123456789"
+  fi
+  
+  # Täze .env faýlyny döret
+  echo -ne "${YELLOW}Täze konfigurasiýa faýly döredilýär...${NC} "
+  cat > $CONFIG_FILE << EOL
+BOT_TOKEN=$BOT_TOKEN
+MONGODB_URI=$MONGODB_URI
+DATABASE_NAME=$DB_NAME
+ADMIN_ID=$ADMIN_ID
+EOL
+  echo -e " ${GREEN}✓${NC}"
+  
+  # Bot hyzmaty täzeden başlat
+  echo -e "${YELLOW}Bot hyzmaty täzeden başladylýar...${NC}"
+  restart_bot
+  
+  echo -e "${GREEN}Konfigurasiýa faýly üstünlikli düzedildi!${NC}"
+}
+
 # Menu funksiýasy
 show_menu() {
   clear
@@ -260,7 +322,7 @@ show_menu() {
   if systemctl is-active --quiet $SERVICE_NAME; then
     echo -e "${GREEN}Bot ýagdaýy: Işleýär ✓${NC}"
   else
-    echo -e "${RED}Bot ýagdaýy: Duruzdyrylan ✗${NC}"
+    echo -e "${RED}Bot ýagdaýy: Duruzdyrylan ✗${NC} - Konfigurasiýa mesele bolup biler [7, 10]"
   fi
   
   if systemctl is-active --quiet mongod; then
@@ -288,10 +350,96 @@ show_menu() {
   echo -e "${GREEN}7)${NC} Konfigurasiýany redaktirle"
   echo -e "${GREEN}8)${NC} Ulgam statusyny görkez"
   echo -e "${GREEN}9)${NC} Boty aýyr"
+  echo -e "${GREEN}10)${NC} .env faýlyny düzet (Bot ýagdaýy näsazlyk bar bolsa)"
   echo -e "${GREEN}0)${NC} Çykyş"
   echo -e "----------------------------------------"
   echo -e "${CYAN}Panel özbaşdak ýapylmaz. Çykmak üçin diňe [0] basyň!${NC}"
-  echo -ne "${CYAN}Saýlaňyzyň belgisini giriziň [0-9]: ${NC}"
+  echo -ne "${CYAN}Saýlaňyzyň belgisini giriziň [0-10]: ${NC}"
+}
+
+# Bot statusyny görkez
+show_status() {
+  echo -e "${YELLOW}Bot ýagdaýy barlanýar...${NC}"
+  
+  # Konfigurasiýa faýlyny barla
+  echo -ne "${YELLOW}.env faýlyny barlaýar...${NC} "
+  if [ -f "$INSTALL_DIR/.env" ]; then
+    echo -e " ${GREEN}Konfigurasiýa faýly bar ✓${NC}"
+    echo -e "${YELLOW}Konfigurasiýa maglumatlary:${NC}"
+    cat "$INSTALL_DIR/.env"
+    echo ""
+    
+    # ADMIN_ID-ni barla
+    ADMIN_ID=$(grep "ADMIN_ID" $INSTALL_DIR/.env | cut -d= -f2)
+    if [ -z "$ADMIN_ID" ] || [ "$ADMIN_ID" = "" ]; then
+      echo -e "${RED}NÄSAZLYK: ADMIN_ID boş! Bot işläp bilmez.${NC}"
+      echo -e "${YELLOW}Bu meseläni düzetmek üçin '10) .env faýlyny düzet' saýlawyň.${NC}"
+    else
+      echo -e "${GREEN}ADMIN_ID: $ADMIN_ID✓${NC}"
+    fi
+  else
+    echo -e " ${RED}Konfigurasiýa faýly ýok!${NC}"
+    echo -e "${YELLOW}Bu meseläni düzetmek üçin '10) .env faýlyny düzet' saýlawyň.${NC}"
+  fi
+  
+  echo -ne "${YELLOW}Hyzmat ýagdaýy soralaýar...${NC} "
+  systemctl status $SERVICE_NAME --no-pager > /tmp/bot_status &
+  PID=$!
+  spin $PID
+  wait $PID
+  echo -e " ${GREEN}✓${NC}"
+  
+  echo -e "\n${GREEN}Bot hyzmaty ýagdaýy:${NC}"
+  cat /tmp/bot_status
+  rm /tmp/bot_status
+  
+  echo -e "\n${YELLOW}Process ID barlanýar...${NC}"
+  if systemctl is-active --quiet $SERVICE_NAME; then
+    PID=$(systemctl show -p MainPID --value $SERVICE_NAME)
+    if [ "$PID" != "0" ]; then
+      echo -ne "${YELLOW}Process maglumatlary soralaýar...${NC} "
+      ps -p $PID -o pid,ppid,cmd,%cpu,%mem --no-headers > /tmp/bot_process &
+      PPID=$!
+      spin $PPID
+      wait $PPID
+      echo -e " ${GREEN}✓${NC}"
+      
+      echo -e "\n${GREEN}Process maglumatlary:${NC}"
+      echo -e "${CYAN}PID     PPID    CMD                             CPU     MEM${NC}"
+      cat /tmp/bot_process
+      rm /tmp/bot_process
+    else
+      echo -e "${RED}PID tapylmady!${NC}"
+    fi
+  else
+    echo -e "${RED}Bot hyzmaty işlemeýär!${NC}"
+    # Bot loglaryndan näsazlyk sebäpleri barla
+    echo -e "${YELLOW}Loglardan näsazlyk sebäplerini barlaýar...${NC}"
+    journalctl -u $SERVICE_NAME -n 20 | grep -i "error\|failed\|ValueError" > /tmp/bot_errors
+    if [ -s "/tmp/bot_errors" ]; then
+      echo -e "${RED}Tapylan näsazlyklar:${NC}"
+      cat /tmp/bot_errors
+      echo ""
+      echo -e "${YELLOW}Bu meseläni düzetmek üçin '10) .env faýlyny düzet' saýlawyň.${NC}"
+    fi
+    rm -f /tmp/bot_errors
+  fi
+  
+  # Diskdäki ýeri barla
+  echo -e "\n${YELLOW}Disk ulanylyşy barlanýar...${NC}"
+  echo -ne "${YELLOW}Bot katalogyndaky disk ulanylyşy...${NC} "
+  du -sh $INSTALL_DIR > /tmp/bot_disk &
+  PID=$!
+  spin $PID
+  wait $PID
+  echo -e " ${GREEN}✓${NC}"
+  
+  echo -e "\n${GREEN}Disk ulanylyşy:${NC}"
+  cat /tmp/bot_disk
+  rm /tmp/bot_disk
+  
+  # Netije
+  echo -e "\n${GREEN}Bot ýagdaýy maglumatlary üstünlikli görkezildi${NC}"
 }
 
 # Esasy menýu döwri
@@ -326,6 +474,9 @@ while true; do
             ;;
         9)
             uninstall_bot
+            ;;
+        10)
+            fix_env_file
             ;;
         0)
             clear
