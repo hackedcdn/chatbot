@@ -249,7 +249,32 @@ MONGODB_URI=$mongodb_uri
 DATABASE_NAME=$db_name
 ADMIN_ID=$admin_id
 EOL
+spin "sleep 1" &
+wait $!
 echo -e " ${GREEN}✓${NC}"
+
+# Aýdyňlaşdyryjy habar - awtomatiki işlemeýän ýagdaýda 
+if [ "$telegram_token" = "TOKEN_PLACEHOLDER" ] || [ "$admin_id" = "123456789" ]; then
+  echo -e "${YELLOW}╔════════════════════════════════════════════════╗${NC}"
+  echo -e "${YELLOW}║       WAJYP KONFIGURASIÝA MAGLUMATLARY         ║${NC}"
+  echo -e "${YELLOW}║                                                ║${NC}"
+  if [ "$telegram_token" = "TOKEN_PLACEHOLDER" ]; then
+    echo -e "${YELLOW}║  ${RED}• Bot tokeni girizilmedi!${NC}                    ║${NC}"
+  fi
+  if [ "$admin_id" = "123456789" ]; then
+    echo -e "${YELLOW}║  ${RED}• Admin ID girizilmedi!${NC}                      ║${NC}"
+  fi
+  echo -e "${YELLOW}║                                                ║${NC}"
+  echo -e "${YELLOW}║  Botdan peýdalanmak üçin:                      ║${NC}"
+  echo -e "${YELLOW}║  ${GREEN}• Dolandyryş paneli açyň: ${CYAN}chatbot${NC}             ║${NC}"
+  echo -e "${YELLOW}║  ${GREEN}• \"7) Konfigurasiýany redaktirle\" saýlaň${NC}       ║${NC}"
+  echo -e "${YELLOW}║  ${GREEN}• Bot tokeni we Admin ID-ňizi giriziň${NC}          ║${NC}"
+  echo -e "${YELLOW}╚════════════════════════════════════════════════╝${NC}"
+  
+  # Birleşdirilmek islenýän ýagdaýynda, wagt gaçyrma
+  echo -e "${YELLOW}Bu habar 10 sekuntdan soň awtomatiki ýapylar${NC}"
+  sleep 10
+fi
 
 # Hyzmat faýlyny döret
 echo -ne "${YELLOW}Ulgam hyzmaty döredilýär${NC} "
