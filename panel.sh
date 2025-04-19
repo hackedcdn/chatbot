@@ -318,6 +318,30 @@ EOL
   restart_bot
   
   echo -e "${GREEN}Konfigurasiýa faýly üstünlikli düzedildi!${NC}"
+  
+  # Bot kodunu düzeltme - eğer dosya varsa format hatalarına karşı bot kodunu da güncelleyelim
+  if [ -f "$INSTALL_DIR/bot.py" ]; then
+    echo -e "${YELLOW}Bot kodlary düzedilýär...${NC}"
+    
+    # Koddaki env dosyası yükleme parçasını daha güvenli bir versiyonla değiştir
+    if grep -q "load_dotenv()" "$INSTALL_DIR/bot.py"; then
+      # Yedek al
+      cp -f "$INSTALL_DIR/bot.py" "$INSTALL_DIR/bot.py.bak" 2>/dev/null || true
+      
+      # Daha güvenli .env yükleme kodu ekle
+      sed -i 's/load_dotenv()/try:\n    load_dotenv()\nexcept Exception:\n    try:\n        load_dotenv(".env.test")\n    except Exception:\n        pass/' "$INSTALL_DIR/bot.py" 2>/dev/null || true
+      
+      # ADMIN_ID dönüşüm hatasını önlemek için güvenli kod ekle
+      sed -i 's/ADMIN_ID = int(os.getenv("ADMIN_ID", 0))/try:\n    admin_id_str = os.getenv("ADMIN_ID", "0").strip()\n    ADMIN_ID = int(admin_id_str) if admin_id_str else 0\nexcept ValueError:\n    ADMIN_ID = 0/' "$INSTALL_DIR/bot.py" 2>/dev/null || true
+    fi
+    
+    # Bir de ".env.test" yedek dosyası oluştur
+    echo "BOT_TOKEN=$BOT_TOKEN" > "$INSTALL_DIR/.env.test"
+    echo "MONGODB_URI=$MONGODB_URI" >> "$INSTALL_DIR/.env.test"
+    echo "DATABASE_NAME=$DB_NAME" >> "$INSTALL_DIR/.env.test"
+    echo "ADMIN_ID=$ADMIN_ID" >> "$INSTALL_DIR/.env.test"
+    chmod 644 "$INSTALL_DIR/.env.test" 2>/dev/null || true
+  fi
 }
 
 # MongoDB näsazlyklary we .env faýlynyň formatyny awtomatiki barla we düzet

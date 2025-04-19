@@ -120,6 +120,120 @@ get_admin_id() {
   echo "$admin_id"
 }
 
+# Gurnalyş wagtynda ähli näsazlyklary awtomatiki düzet
+autofix_all_issues() {
+  echo -e "${YELLOW}Ulgam awtomatiki barlanýar we konfigurasiýa täzelenýär...${NC}"
+  
+  # MongoDB işleýşini barla we düzet
+  echo -ne "${YELLOW}MongoDB ýagdaýy barlanýar... ${NC}"
+  if ! systemctl is-active --quiet mongod; then
+    echo -e "${RED}MongoDB işlemeýär!${NC}"
+    echo -ne "${YELLOW}MongoDB işledilýär... ${NC}"
+    systemctl start mongod || true
+    sleep 3
+    
+    if ! systemctl is-active --quiet mongod; then
+      echo -e "${RED}MongoDB işledilip bilinmedi. Täzeden gurnamaga synanyşylýar.${NC}"
+      
+      # Ulgamyň distro kesgitle
+      if [ -f /etc/lsb-release ]; then
+        source /etc/lsb-release
+        CODENAME=$DISTRIB_CODENAME
+      elif [ -f /etc/os-release ]; then
+        source /etc/os-release
+        CODENAME=$(lsb_release -cs 2>/dev/null || echo "focal")
+      else
+        CODENAME="focal"
+      fi
+      
+      # MongoDB depo açaryny al
+      apt-key del 656408E390CFB1F5 > /dev/null 2>&1 || true
+      apt-key del 6D9BEB20FB066DF1 > /dev/null 2>&1 || true
+      wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add - > /dev/null 2>&1 || true
+      
+      # MongoDB depo listi döret
+      echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $CODENAME/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list > /dev/null 2>&1 || true
+      
+      # Paketleri täzele we MongoDB gurna
+      apt-get update > /dev/null 2>&1 || true
+      apt-get install -y mongodb-org > /dev/null 2>&1 || true
+      
+      # MongoDB serwis faýlyny döret (ýok bolsa)
+      if [ ! -f /lib/systemd/system/mongod.service ]; then
+        cat > /lib/systemd/system/mongod.service << EOMONGOSERVICE
+[Unit]
+Description=MongoDB Database Server
+Documentation=https://docs.mongodb.org/manual
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=mongodb
+Group=mongodb
+EnvironmentFile=-/etc/default/mongod
+ExecStart=/usr/bin/mongod --config /etc/mongod.conf
+PIDFile=/var/run/mongodb/mongod.pid
+LimitFSIZE=infinity
+LimitCPU=infinity
+LimitAS=infinity
+LimitNOFILE=64000
+LimitNPROC=64000
+TasksMax=infinity
+
+[Install]
+WantedBy=multi-user.target
+EOMONGOSERVICE
+      fi
+      
+      # Systemd täzelep, MongoDB işlet
+      systemctl daemon-reload > /dev/null 2>&1 || true
+      systemctl enable mongod > /dev/null 2>&1 || true
+      systemctl start mongod > /dev/null 2>&1 || true
+      sleep 3
+    fi
+  fi
+  
+  if systemctl is-active --quiet mongod; then
+    echo -e "${GREEN}MongoDB işleýär ✓${NC}"
+  else
+    echo -e "${RED}MongoDB gurnamak bolmady. Panel açylanda awtomatiki düzediler.${NC}"
+  fi
+  
+  echo -e "${GREEN}Ulgam awtomatiki sazlama tamamlandy ✓${NC}"
+}
+
+# Awtomatiki dogry .env faýlyny döret
+create_correct_env_file() {
+  ENV_FILE="$INSTALL_DIR/.env"
+  echo -e "${YELLOW}Dogry formatda .env faýly döredilýär...${NC}"
+  
+  # Konfigurasiýa faýly dogry formatda döret
+  echo "BOT_TOKEN=$telegram_token" > "$ENV_FILE"
+  echo "MONGODB_URI=mongodb://localhost:27017" >> "$ENV_FILE"
+  echo "DATABASE_NAME=chatbot_db" >> "$ENV_FILE"
+  echo "ADMIN_ID=$admin_id" >> "$ENV_FILE"
+  
+  # Faýl rugsat hukuklary düzet
+  chmod 644 "$ENV_FILE"
+  
+  # Barlag ýagdaýda, ".env.test" hem döret 
+  echo "BOT_TOKEN=$telegram_token" > "$INSTALL_DIR/.env.test"
+  echo "MONGODB_URI=mongodb://localhost:27017" >> "$INSTALL_DIR/.env.test"
+  echo "DATABASE_NAME=chatbot_db" >> "$INSTALL_DIR/.env.test"
+  echo "ADMIN_ID=$admin_id" >> "$INSTALL_DIR/.env.test"
+  
+  # bot.py faýlyny düzet - .env formaty üýtget, ýalňyşlyk bar bolsa täze .env üçin barla
+  if [ -f "$INSTALL_DIR/bot.py" ]; then
+    # .env.test ulanmagy üçin ýa-da .env-iň barlygy ätiýaçlyk bilen barla
+    sed -i 's/load_dotenv()/try:\n    load_dotenv()\nexcept Exception:\n    try:\n        load_dotenv(".env.test")\n    except Exception:\n        pass/' "$INSTALL_DIR/bot.py" || true
+    
+    # int() çevirimi bilen mesele bar bolsa, ADMIN_ID-ni almak işini düzet
+    sed -i 's/ADMIN_ID = int(os.getenv("ADMIN_ID", 0))/try:\n    admin_id_str = os.getenv("ADMIN_ID", "0").strip()\n    ADMIN_ID = int(admin_id_str) if admin_id_str else 0\nexcept ValueError:\n    ADMIN_ID = 0/' "$INSTALL_DIR/bot.py" || true
+  fi
+  
+  echo -e "${GREEN}Konfigurasiýa faýly düzgün döredildi✓${NC}"
+}
+
 # Ulgam taýýarlamak
 setup_system() {
   echo -e "${YELLOW}Ulgam täzelenýär we zerur paketler gurnalyar...${NC}"
@@ -131,7 +245,7 @@ setup_system() {
   wait $PID
   
   # Zerur paketleri gurnamak
-  for package in python3 python3-pip python3-venv git screen curl wget; do
+  for package in python3 python3-pip python3-venv git screen curl wget bc gnupg; do
     echo -ne "${YELLOW}Guralýar: ${CYAN}$package${NC} "
     apt install -y $package > /dev/null 2>&1 &
     PID=$!
@@ -168,13 +282,8 @@ setup_system() {
   wait $PID
   echo -e " ${GREEN}✓${NC}"
   
-  echo -ne "${YELLOW}MongoDB hyzmaty işledilýär${NC} "
-  systemctl enable mongod > /dev/null 2>&1
-  systemctl start mongod > /dev/null 2>&1 &
-  PID=$!
-  spin $PID
-  wait $PID
-  echo -e " ${GREEN}✓${NC}"
+  # Ulgam awtomatiki sazlama
+  autofix_all_issues
   
   echo -e "${GREEN}Ulgam taýýarlandy!${NC}"
 }
@@ -244,36 +353,20 @@ wait $PID
 # Konfigurasiýa faýlyny döret
 echo -ne "${YELLOW}Konfigurasiýa faýly döredilýär${NC} "
 
-# .env faýlyny standart formatta ýazmak, hiç hili ýalňyşlyk bolmazlyk üçin
-# \n simwoly goýulmazlyk üçin zat ýazmak
-cat > $INSTALL_DIR/.env << 'EOL'
-BOT_TOKEN='$telegram_token'
-MONGODB_URI='mongodb://localhost:27017'
-DATABASE_NAME='chatbot_db'
-ADMIN_ID='$admin_id'
-EOL
+# Konfigurasiýany dogry formatda ýaz
+create_correct_env_file
 
-# Indi goýlan simwollary hakyky bahalar bilen çalyşdyr
-sed -i "s/\\$telegram_token/$telegram_token/g" $INSTALL_DIR/.env
-sed -i "s/\\$admin_id/$admin_id/g" $INSTALL_DIR/.env
-
-# ' simwollaryny aýyr
-sed -i "s/'//g" $INSTALL_DIR/.env
-
-chmod 644 $INSTALL_DIR/.env
-sleep 1
-echo -e " ${GREEN}✓${NC}"
-
-# Faýl düzgünmi barla
-if grep -q "BOT_TOKEN=" $INSTALL_DIR/.env && grep -q "ADMIN_ID=" $INSTALL_DIR/.env; then
-  echo -e "${GREEN}.env faýly dogry döredildi✓${NC}"
+# .env faýly dogry döredilendigi barla
+if [ -f "$INSTALL_DIR/.env" ]; then
+  echo -e "${GREEN}.env faýly üstünlikli döredildi ✓${NC}"
+  cat "$INSTALL_DIR/.env"
 else
-  echo -e "${RED}.env faýly döretmek bilen mesele bar. Awtomatiki düzedilýär...${NC}"
   # Ýönekeý usul bilen täzeden döret
   echo "BOT_TOKEN=$telegram_token" > $INSTALL_DIR/.env
   echo "MONGODB_URI=mongodb://localhost:27017" >> $INSTALL_DIR/.env
   echo "DATABASE_NAME=chatbot_db" >> $INSTALL_DIR/.env
   echo "ADMIN_ID=$admin_id" >> $INSTALL_DIR/.env
+  echo -e "${YELLOW}Konfigurasiýa faýly standart formatda döredildi.${NC}"
 fi
 
 # Aýdyňlaşdyryjy habar - awtomatiki işlemeýän ýagdaýda 
@@ -357,10 +450,98 @@ PID=$!
 spin $PID 
 wait $PID
 
+# Awtomatiki düzeltme üçin Python skriptini ýükle (eger ýok bolsa)
+if [ ! -f "$INSTALL_DIR/fix_configs.py" ]; then
+  cat > "$INSTALL_DIR/fix_configs.py" << EOPYTHON
+#!/usr/bin/env python3
+import os
+import re
+import sys
+
+# Ana .env dosyasının yolunu belirtin
+env_file = "/opt/chatbot/.env"
+env_backup = "/opt/chatbot/.env.backup"
+
+# .env dosyası var mı kontrol et
+if os.path.exists(env_file):
+    try:
+        # Yedek al
+        os.system(f"cp {env_file} {env_backup}")
+        
+        # Dosyayı oku
+        with open(env_file, 'r') as f:
+            content = f.read()
+        
+        # Düzeltilmiş içeriği hazırla
+        fixed_content = ""
+        
+        # Token ve Admin ID değerlerini çıkar
+        token_match = re.search(r'BOT_TOKEN[=:](.*?)[\n\r]', content + "\n")
+        mongo_match = re.search(r'MONGO.*URI[=:](.*?)[\n\r]', content + "\n")
+        db_match = re.search(r'DATABASE.*NAME[=:](.*?)[\n\r]', content + "\n")
+        admin_match = re.search(r'ADMIN.*ID[=:](.*?)[\n\r]', content + "\n")
+        
+        bot_token = token_match.group(1).strip() if token_match else "TOKEN_PLACEHOLDER"
+        mongodb_uri = mongo_match.group(1).strip() if mongo_match else "mongodb://localhost:27017"
+        db_name = db_match.group(1).strip() if db_match else "chatbot_db"
+        admin_id = admin_match.group(1).strip() if admin_match else "123456789"
+        
+        # Gereksiz karakterleri temizle
+        bot_token = re.sub(r'[^a-zA-Z0-9\.:_-]', '', bot_token)
+        mongodb_uri = re.sub(r'[^a-zA-Z0-9\.:_\/@-]', '', mongodb_uri)
+        db_name = re.sub(r'[^a-zA-Z0-9\.:_-]', '', db_name)
+        admin_id = re.sub(r'[^0-9]', '', admin_id)
+        
+        # Düzgün .env dosyası oluştur
+        with open(env_file, 'w') as f:
+            f.write(f"BOT_TOKEN={bot_token}\n")
+            f.write(f"MONGODB_URI={mongodb_uri}\n")
+            f.write(f"DATABASE_NAME={db_name}\n")
+            f.write(f"ADMIN_ID={admin_id}\n")
+        
+        print("Konfigürasyon dosyası başarıyla düzeltildi.")
+        
+    except Exception as e:
+        print(f"Hata oluştu: {str(e)}")
+        # Hata durumunda yeni bir dosya oluştur
+        with open(env_file, 'w') as f:
+            f.write("BOT_TOKEN=TOKEN_PLACEHOLDER\n")
+            f.write("MONGODB_URI=mongodb://localhost:27017\n")
+            f.write("DATABASE_NAME=chatbot_db\n")
+            f.write("ADMIN_ID=123456789\n")
+else:
+    # Dosya yoksa yeni bir tane oluştur
+    with open(env_file, 'w') as f:
+        f.write("BOT_TOKEN=TOKEN_PLACEHOLDER\n")
+        f.write("MONGODB_URI=mongodb://localhost:27017\n")
+        f.write("DATABASE_NAME=chatbot_db\n")
+        f.write("ADMIN_ID=123456789\n")
+    print("Yeni konfigürasyon dosyası oluşturuldu.")
+
+# İzinleri düzelt
+os.system(f"chmod 644 {env_file}")
+EOPYTHON
+
+  chmod +x "$INSTALL_DIR/fix_configs.py"
+fi
+
+# Hyzmaty başlatmadan öňürdip, konfigurasiýany awtomatiki barla we düzet
+python3 "$INSTALL_DIR/fix_configs.py" > /dev/null 2>&1 || true
+
 systemctl start chatbot.service &
 PID=$!
 progress_bar "Bot hyzmaty başladylýar" $PID 3
 wait $PID
+
+# Başlandymy?
+if ! systemctl is-active --quiet chatbot.service; then
+  echo -e "${RED}Bot hyzmaty başladylyp bilinmedi. Awtomatiki täzelenmäge synanyşylýar...${NC}"
+  # Konfigurasiýany täzeden döret
+  create_correct_env_file
+  # Bot hyzmatyny täzeden başlat
+  systemctl restart chatbot.service
+  sleep 3
+fi
 
 echo -e ""
 echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
