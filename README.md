@@ -12,102 +12,63 @@ ChatBot, Telegram gruplaryny dolandyrmak üçin Türkmençe dilli çözgütdir. 
 - **Statistikalar:** Topar işjeňliginiň statistikalaryny görmek
 - **Diňe Administrator Buýruklary:** Diňe administratorlaryň ulanyp biljek ýörite buýruklar
 
-## Gurnalyş 🛠️
+## Aňsat Gurnalyş 🛠️
 
-### Ulgam Talaplary
+### Bir buýruk bilen gurnamak (iň aňsat usul)
 
-- Python 3.8+
-- MongoDB
-- Telegram Bot Token (BotFather-dan alyp bolar)
-
-### Awtomatik Gurnalyş (Ubuntu)
-
-ChatBot-y Ubuntu serwerinizde gurmak üçin:
+ChatBot-y Ubuntu serwerinizde gurmak üçin diňe şu bir buýrugy işlediň:
 
 ```bash
-# Gurnalyş skriptini ýükläň
-wget -O install.sh https://raw.githubusercontent.com/hackedcdn/chatbot/main/install.sh
-
-# Ýerine ýetirmek ygtyýaryny beriň
-chmod +x install.sh
-
-# Gurnalyşy başladyň
-sudo ./install.sh
+sudo curl -sSL https://raw.githubusercontent.com/hackedcdn/chatbot/main/install.sh | sudo bash
 ```
 
-Gurnalyş wizardy size Bot Token we beýleki gerekli maglumatlary sorar.
+Bu buýruk:
+1. Zerur ulgam paketlerini gurnar
+2. MongoDB maglumat bazasyny gurnar we gurnalyşy
+3. Bot üçin gerekli maglumatlary ýygnar
+4. Boty gurnar we awtomatiki işleder
+5. Bot dolandyryş panelini gurnar
 
-### El bilen Gurnalyş
+Gurnalyş tamamlanandan soň, diňe ```chatbot``` buýrugy bilen boty dolandyryp bilersiňiz.
 
-1. Repony klonlaň:
-   ```bash
-   git clone https://github.com/hackedcdn/chatbot.git
-   cd chatbot
-   ```
+## Dolandyryş üçin usullar 📱
 
-2. Wirtual gurşaw döredip, baglylyky guramalary gurnap alyň:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+### Ýönekeý dolandyryş
 
-3. `.env` faýlyny dörediň:
-   ```
-   BOT_TOKEN=your_telegram_bot_token
-   MONGODB_URI=mongodb://localhost:27017
-   DATABASE_NAME=turkmenbot_db
-   ADMIN_ID=your_telegram_id
-   ```
-
-4. Boty başladyň:
-   ```bash
-   python bot.py
-   ```
-
-## Ulanmak 📝
-
-### Esasy Buýruklar
-
-- `/start` - Boty başladyp, kömek menýusyny görkezýär
-- `/help` - Elýeterli buýruklary görkezýär
-- `/settings` - Bot sazlamalaryny düzedýär
-- `/stats` - Topar statistikalaryny görkezýär
-- `/version` - Bot wersiýasyny görkezýär
-
-### Administrator Buýruklary
-
-- `/ban` - Ulanyjyny topardan gadagan edýär
-- `/unban` - Ulanyjynyň gadaganyny aýyrýar
-- `/mute` - Ulanyjyny sessiz edýär
-- `/unmute` - Ulanyjynyň sessizligini aýyrýar
-- `/warn` - Ulanyjy duýduryş berýär
-- `/unwarn` - Ulanyjynyň duýduryşyny aýyrýar
-- `/pin` - Habary berkidýär
-- `/unpin` - Berkidilen habary aýyrýar
-- `/add_command` - Ýörite buýruk goşýar
-
-## Dolandyryş Paneli 🖥️
-
-ChatBot, aňsat dolandyrmak üçin terminal esasly dolandyryş panelini hödürleýär. Panele girmek üçin:
+Gurnalyşdan soň, boty dolandyrmak üçin diňe bir buýruk bar:
 
 ```bash
-sudo botpanel
+chatbot
 ```
 
-Dolandyryş paneli arkaly şulary edip bilersiňiz:
-- Boty başlatmak, duruzmak we täzeden başlatmak
-- Bot loglaryny görmek
-- Konfigurasiýany redaktirlemek
+Bu buýruk size ýönekeý dolandyryş panelini açar, şu işleri edip bilersiňiz:
+- Boty başlatmak, duruzmak, täzeden başlatmak
 - Boty täzelemek
+- Konfigurasiýany üýtgetmek
+- Logları görmek
+
+### Esasy Buýruklar (Telegram-da)
+
+- `/start` - Boty başlat
+- `/help` - Kömek al
+- `/settings` - Sazlamalary aç
+
+### Administrator Buýruklary (Telegram-da)
+
+- `/ban` - Ulanyjyny gadagan et
+- `/unban` - Ulanyjynyň gadaganyny aýyr
+- `/mute` - Ulanyjyny sessiz et
+- `/unmute` - Ulanyjynyň sessizligini aýyr
 
 ## Täzelemek ⬆️
 
-Boty täzelemek üçin dolandyryş panelini ulanyp bilersiňiz ýa-da şu buýrugy işledip bilersiňiz:
+Boty täzelemek üçin:
 
 ```bash
-sudo /opt/turkmenbot/update.sh
+chatbot
 ```
+
+Buýrugyny işledip, "6) Boty täzele" opsiýasyny saýlaň.
 
 ## Ygtyýarnama 📄
 

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# ChatBot - Turkmenistan üçin chatbot
+# Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)
+
 # Reňk kesgitlemeleri
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -11,6 +14,13 @@ NC='\033[0m' # No Color
 # Gurnalyş katalogy
 INSTALL_DIR="/opt/chatbot"
 SERVICE_NAME="chatbot"
+
+# Root barlagy
+if [ "$(id -u)" != "0" ]; then
+    echo -e "${RED}Bu amal üçin root ygtyýarlary gerek. Awtomatiki roota geçiljek...${NC}"
+    sudo $0 "$@"
+    exit $?
+fi
 
 # Ekrany arassala
 clear
@@ -26,14 +36,7 @@ echo "  \_____|_| |_|\__,_|\__|____/ \___/ \__|"
 echo -e "${NC}"
 echo -e "${YELLOW}ChatBot Dolandyryş Paneli${NC}"
 echo -e "${GREEN}Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)${NC}"
-echo ""
-
-# Root barlagy
-if [ "$(id -u)" != "0" ]; then
-    echo -e "${RED}Bu amal üçin root ygtyýarlary gerek.${NC}"
-    echo -e "${YELLOW}sudo botpanel${NC} buýrugy bilen täzeden synanyşyň."
-    exit 1
-fi
+echo "----------------------------------------"
 
 # Funksiýalar
 check_status() {
@@ -67,7 +70,7 @@ restart_bot() {
 
 update_bot() {
     echo -e "${BLUE}Bot täzelenýär...${NC}"
-    bash $INSTALL_DIR/update.sh
+    curl -sSL https://raw.githubusercontent.com/hackedcdn/chatbot/main/update.sh | sudo bash
     echo -e "\n${BLUE}Dowam etmek üçin Enter düwmesine basyň...${NC}"
     read
 }
@@ -138,7 +141,8 @@ uninstall_bot() {
         rm -rf $INSTALL_DIR
         
         echo -e "${BLUE}Dolandyryş paneli buýrugy aýrylýar...${NC}"
-        rm -f /usr/local/bin/botpanel
+        rm -f /usr/local/bin/chatbot
+        rm -f /usr/bin/chatbot
         
         echo -e "${GREEN}ChatBot üstünlikli aýryldy.${NC}"
         exit 0
@@ -188,7 +192,7 @@ while true; do
     echo -e "${CYAN}7)${NC} Boty Aýyr"
     echo -e "${CYAN}0)${NC} Çykyş"
     echo ""
-    read -p "Saýlawyňyz [0-7]: " choice
+    read -p "Saýlawyňyz [0-7] (awtomatiki çykmak üçin 10 sekunt): " -t 10 choice
     
     case $choice in
         1) start_bot ;;
@@ -198,7 +202,7 @@ while true; do
         5) view_logs ;;
         6) edit_config ;;
         7) uninstall_bot ;;
-        0) clear; exit 0 ;;
+        0|"") clear; exit 0 ;;
         *) echo -e "${RED}Nädogry saýlaw!${NC}"; sleep 2 ;;
     esac
 done 
