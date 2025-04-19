@@ -1,13 +1,13 @@
 """
-Telegram bot için dil dosyası.
-Desteklenen diller: Türkmence (tm), Türkçe (tr), Rusça (ru)
+ChatBot - Turkmenistan üçin chatbot
+Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)
 """
 
 LANGUAGES = {
     "tm": {
         "name": "Türkmençe",
         # Genel mesajlar
-        "welcome_bot": "Salam! Men bu toparyň dolandyryş we işjeňlik botydyryn. Size nähili kömek edip bilerin?",
+        "welcome_bot": "Salam! Men ChatBot. Size nähili kömek edip bilerin?",
         "choose_language": "Dil saýlaň:",
         "language_changed": "Dil üýtgedildi: Türkmençe",
         
@@ -134,279 +134,17 @@ Düzgünlere boýun egmeýän agzalar duýdurylyp ýa-da topardan çykarylyp bil
         "todays_question": "💬 *Günüň Soragy*\n\n{}",
         "discussion_time": "💬 *Çekişme Wagty*\n\n{}",
         "announcement": "📢 *Bildiriş*\n\n{}",
-        "write_your_answer": "Jogabyňyzy söhbetdeşlige ýazyň we beýleki agzalar bilen gatnaşyga giriň!"
-    },
-    
-    "tr": {
-        "name": "Türkçe",
-        # Genel mesajlar
-        "welcome_bot": "Merhaba! Ben bu grubun yönetim ve aktivite botuyum. Size nasıl yardımcı olabilirim?",
-        "choose_language": "Dil seçin:",
-        "language_changed": "Dil değiştirildi: Türkçe",
-        
-        # Kullanıcı komutları
-        "cmd_help": "Yardım",
-        "cmd_rules": "Kurallar",
-        "cmd_profile": "Profil",
-        "cmd_events": "Etkinlikler",
-        "cmd_suggest": "Öneri",
-        "cmd_games": "Oyunlar",
-        "cmd_language": "Dil",
-        
-        # Admin komutları
-        "cmd_stats": "İstatistikler",
-        "cmd_broadcast": "Duyuru",
-        "cmd_poll": "Anket",
-        "cmd_activity": "Aktivite",
-        "cmd_ban": "Yasakla",
-        "cmd_unban": "Yasak Kaldır",
-        "cmd_promote": "Yönetici Yap",
-        "cmd_demote": "Yöneticilik Al",
-        
-        # Komut listeleri
-        "user_commands": """
-*Kullanıcı Komutları:*
-/help - Yardım menüsünü göster
-/rules - Grup kurallarını göster
-/profile - Profilinizi görüntüleyin
-/events - Yaklaşan etkinlikleri göster
-/suggest - Öneri veya geri bildirim gönderin
-/games - Oyun menüsünü aç
-/language - Dil değiştir
-""",
-        "admin_commands": """
-*Admin Komutları:*
-/stats - Grup istatistiklerini göster
-/broadcast - Tüm kullanıcılara mesaj gönder
-/poll - Anket oluştur
-/activity - Aktivite mesajı gönder
-/ban - Kullanıcıyı yasakla
-/unban - Kullanıcının yasağını kaldır
-/promote - Kullanıcıyı yönetici yap
-/demote - Kullanıcının yönetici yetkisini al
-""",
-        
-        # Grup kuralları
-        "group_rules": """
-*Grup Kuralları:*
-
-1. Saygılı olun: Tüm üyelere saygılı davranın, hakaret ve kötü dil kullanmayın.
-
-2. Spam yapmayın: Aynı mesajı tekrar tekrar göndermekten kaçının.
-
-3. İlgili içerik paylaşın: Grup konusuyla ilgili içerikler paylaşın.
-
-4. Reklam yapmayın: İzinsiz reklam ve tanıtım yapmak yasaktır.
-
-5. Özel bilgileri paylaşmayın: Kendi veya başkalarının özel bilgilerini paylaşmayın.
-
-6. Telif haklarına saygı gösterin: Telif hakkı ihlali olan içerikleri paylaşmayın.
-
-7. Yönetici uyarılarına uyun: Yöneticilerin uyarılarını dikkate alın.
-
-Kurallara uymayan üyeler uyarılabilir veya gruptan çıkarılabilir.
-""",
-        
-        # Poll Topics
-        "poll_topics": [
-            ["Hangi etkinliği tercih edersiniz?", ["Sesli sohbet", "Video konferans", "Oyun gecesi", "Bilgi yarışması"]],
-            ["En sevdiğiniz iletişim yöntemi hangisi?", ["Mesajlaşma", "Sesli arama", "Video görüşme", "Yüz yüze görüşme"]],
-            ["Hangi tür içerikler görmek istersiniz?", ["Haberler", "Eğitim", "Eğlence", "Teknoloji", "Spor"]],
-            ["Grupta en çok neyi seviyorsunuz?", ["Sohbetler", "Paylaşılan içerikler", "Yeni insanlar tanımak", "Bilgi edinmek"]],
-            ["Hangi saatlerde daha aktifsiniz?", ["Sabah", "Öğlen", "Akşam", "Gece"]]
-        ],
-        
-        # Karşılama mesajları
-        "welcome_messages": [
-            "Hoş geldiniz! Gruba katıldığınız için teşekkür ederiz! 🎉",
-            "Aramıza hoş geldiniz! Sizinle tanışmak için sabırsızlanıyoruz! 👋",
-            "Yeni bir üye daha! Gruba hoş geldiniz! 🚀",
-            "Merhaba ve gruba hoş geldiniz! Keyifli sohbetler dileriz! 💬"
-        ],
-        
-        # Aktivite promtları
-        "activity_prompts": [
-            "Bugün nasıl geçiyor? Paylaşmak istediğiniz bir şey var mı? 💭",
-            "Bu haftanın en iyi anınız neydi? 🌟",
-            "Hangi konular hakkında daha fazla konuşmak istersiniz? 🗣️",
-            "Öneri veya geri bildirimleriniz var mı? Bize bildirin! 📝",
-            "Herkese günaydın! Bugün için planlarınız neler? ☀️",
-            "Sizce grubumuzu nasıl geliştirebiliriz? Fikirlerinizi paylaşın! 🚀",
-            "Hafta sonu için önerileriniz var mı? 🏖️",
-            "Bugün size ilham veren bir şey oldu mu? 💫",
-            "Sevdiğiniz bir alıntı veya söz paylaşır mısınız? 📚",
-            "En son izlediğiniz film ya da dizi neydi? 🎬"
-        ],
-        
-        # Profil
-        "name": "İsim",
-        "username": "Kullanıcı Adı",
-        "join_date": "Katılım Tarihi",
-        "message_count": "Mesaj Sayısı",
-        "language": "Dil",
-        
-        # İstatistikler
-        "total_users": "Toplam Üye",
-        "active_today": "Bugün Aktif",
-        "top_users": "En Aktif Üyeler",
-        
-        # Oyun menüsü
-        "games_menu": "🎮 *Oyun Menüsü*\n\nEğlenmek ve diğer üyelerle etkileşimde bulunmak için bir oyun seçin:",
-        "game_chance": "Şans Oyunu",
-        "game_trivia": "Soru-Cevap",
-        "game_word": "Kelime Oyunu",
-        
-        # Diğer mesajlar
-        "admin_only": "Bu komut sadece yöneticiler için kullanılabilir.",
-        "suggestion_saved": "✅ Öneriniz kaydedildi. Teşekkür ederiz!",
-        "poll_question": "Soru",
-        "poll_answer": "Cevap",
-        "show_answer": "Cevabı Göster",
-        "your_chance": "Şansın bugün: {}/100\n\n{}",
-        "very_lucky": "Çok şanslısın! 🍀",
-        "todays_question": "💬 *Günün Sorusu*\n\n{}",
-        "discussion_time": "💬 *Tartışma Zamanı*\n\n{}",
-        "announcement": "📢 *Duyuru*\n\n{}",
-        "write_your_answer": "Cevabınızı sohbete yazın ve diğer üyelerle etkileşime geçin!"
-    },
-    
-    "ru": {
-        "name": "Русский",
-        # Genel mesajlar
-        "welcome_bot": "Привет! Я бот для управления и активности этой группы. Чем я могу вам помочь?",
-        "choose_language": "Выберите язык:",
-        "language_changed": "Язык изменен: Русский",
-        
-        # Kullanıcı komutları
-        "cmd_help": "Помощь",
-        "cmd_rules": "Правила",
-        "cmd_profile": "Профиль",
-        "cmd_events": "События",
-        "cmd_suggest": "Предложение",
-        "cmd_games": "Игры",
-        "cmd_language": "Язык",
-        
-        # Admin komutları
-        "cmd_stats": "Статистика",
-        "cmd_broadcast": "Объявление",
-        "cmd_poll": "Опрос",
-        "cmd_activity": "Активность",
-        "cmd_ban": "Блокировать",
-        "cmd_unban": "Разблокировать",
-        "cmd_promote": "Повысить",
-        "cmd_demote": "Понизить",
-        
-        # Komut listeleri
-        "user_commands": """
-*Команды пользователя:*
-/help - Показать меню помощи
-/rules - Показать правила группы
-/profile - Просмотреть свой профиль
-/events - Показать предстоящие события
-/suggest - Отправить предложение или отзыв
-/games - Открыть меню игр
-/language - Изменить язык
-""",
-        "admin_commands": """
-*Команды администратора:*
-/stats - Показать статистику группы
-/broadcast - Отправить сообщение всем пользователям
-/poll - Создать опрос
-/activity - Отправить сообщение активности
-/ban - Заблокировать пользователя
-/unban - Разблокировать пользователя
-/promote - Сделать пользователя администратором
-/demote - Удалить права администратора
-""",
-        
-        # Poll Topics
-        "poll_topics": [
-            ["Какое мероприятие вы предпочитаете?", ["Голосовой чат", "Видеоконференция", "Игровой вечер", "Викторина"]],
-            ["Какой способ общения вам нравится больше всего?", ["Сообщения", "Голосовые вызовы", "Видеозвонки", "Личные встречи"]],
-            ["Какой контент вы хотели бы видеть?", ["Новости", "Образование", "Развлечения", "Технологии", "Спорт"]],
-            ["Что вам больше всего нравится в группе?", ["Беседы", "Публикуемый контент", "Знакомство с новыми людьми", "Получение информации"]],
-            ["В какое время вы наиболее активны?", ["Утро", "День", "Вечер", "Ночь"]]
-        ],
-        
-        # Grup kuralları
-        "group_rules": """
-*Правила группы:*
-
-1. Будьте вежливы: Относитесь ко всем участникам с уважением, не используйте оскорбления и грубые выражения.
-
-2. Не спамьте: Избегайте повторной отправки одного и того же сообщения.
-
-3. Публикуйте релевантный контент: Делитесь содержанием, связанным с темой группы.
-
-4. Не рекламируйте: Несанкционированная реклама и продвижение запрещены.
-
-5. Не делитесь личной информацией: Не раскрывайте свою или чужую личную информацию.
-
-6. Уважайте авторские права: Не делитесь контентом, нарушающим авторские права.
-
-7. Следуйте указаниям администраторов: Обращайте внимание на предупреждения администраторов.
-
-Пользователи, не соблюдающие правила, могут быть предупреждены или удалены из группы.
-""",
-        
-        # Karşılama mesajları
-        "welcome_messages": [
-            "Добро пожаловать! Спасибо за присоединение к группе! 🎉",
-            "Добро пожаловать в наш круг! Мы с нетерпением ждем знакомства с вами! 👋",
-            "Ещё один новый участник! Добро пожаловать в группу! 🚀",
-            "Привет и добро пожаловать в группу! Желаем приятного общения! 💬"
-        ],
-        
-        # Aktivite promtları
-        "activity_prompts": [
-            "Как проходит ваш день? Есть ли что-то, чем хотите поделиться? 💭",
-            "Что было лучшим моментом этой недели? 🌟",
-            "О каких темах вы хотели бы больше поговорить? 🗣️",
-            "Есть ли у вас предложения или отзывы? Дайте нам знать! 📝",
-            "Доброе утро всем! Какие у вас планы на сегодня? ☀️",
-            "Как вы думаете, как мы можем улучшить нашу группу? Делитесь своими идеями! 🚀",
-            "Есть ли у вас предложения на выходные? 🏖️",
-            "Было ли сегодня что-то, что вас вдохновило? 💫",
-            "Не могли бы вы поделиться любимой цитатой или высказыванием? 📚",
-            "Какой фильм или сериал вы смотрели в последнее время? 🎬"
-        ],
-        
-        # Profil
-        "name": "Имя",
-        "username": "Имя пользователя",
-        "join_date": "Дата присоединения",
-        "message_count": "Количество сообщений",
-        "language": "Язык",
-        
-        # İstatistikler
-        "total_users": "Всего участников",
-        "active_today": "Активны сегодня",
-        "top_users": "Самые активные пользователи",
-        
-        # Oyun menüsü
-        "games_menu": "🎮 *Меню игр*\n\nВыберите игру, чтобы развлечься и взаимодействовать с другими участниками:",
-        "game_chance": "Игра удачи",
-        "game_trivia": "Вопрос-ответ",
-        "game_word": "Словесная игра",
-        
-        # Diğer mesajlar
-        "admin_only": "Эта команда доступна только для администраторов.",
-        "suggestion_saved": "✅ Ваше предложение сохранено. Спасибо!",
-        "poll_question": "Вопрос",
-        "poll_answer": "Ответ",
-        "show_answer": "Показать ответ",
-        "your_chance": "Ваша удача сегодня: {}/100\n\n{}",
-        "very_lucky": "Очень везучий! 🍀",
-        "todays_question": "💬 *Вопрос дня*\n\n{}",
-        "discussion_time": "💬 *Время обсуждения*\n\n{}",
-        "announcement": "📢 *Объявление*\n\n{}",
-        "write_your_answer": "Напишите свой ответ в чат и взаимодействуйте с другими участниками!"
+        "write_your_answer": "Jogabyňyzy söhbetdeşlige ýazyň we beýleki agzalar bilen gatnaşyga giriň!",
+        "owner_info": "Bu bot hackedcdn (https://github.com/hackedcdn/chatbot) tarapyndan döredildi."
     }
 }
 
 def get_text(lang_code, key):
-    """Belirtilen dilin belirtilen anahtar kelimesini döndürür"""
+    """
+    Belirli bir anahtar için çeviriyi döndürür.
+    Dil kodu yoksa varsayılan olarak Türkmence kullanılır.
+    """
     if lang_code not in LANGUAGES:
-        lang_code = "tm"  # Varsayılan olarak Türkmence
+        lang_code = "tm"
     
-    return LANGUAGES[lang_code].get(key, LANGUAGES["tm"].get(key, "")) 
+    return LANGUAGES[lang_code].get(key, f"Tercime tapylmady: {key}") 

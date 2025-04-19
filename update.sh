@@ -1,83 +1,91 @@
 #!/bin/bash
 
-# Renk tanımları
-RED='\033[0;31m'
+# ChatBot täzeleme skripti
+# Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)
+
+# Reňk kesgitlemeleri
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+YELLOW='\033[0;33m'
+RED='\033[0;31m'
+NC='\033[0m'
 
-# Banner göster
-echo -e "${BLUE}"
-echo "  _______         _                          ____        _   "
-echo " |__   __|       | |                        |  _ \      | |  "
-echo "    | |_   _ _ __| | ___ __ ___   ___ _ __ | |_) | ___ | |_ "
-echo "    | | | | | '__| |/ / '_ \` _ \ / _ \ '_ \|  _ < / _ \| __|"
-echo "    | | |_| | |  |   <| | | | | |  __/ | | | |_) | (_) | |_ "
-echo "    |_|\__,_|_|  |_|\_\_| |_| |_|\___|_| |_|____/ \___/ \__|"
-echo -e "${NC}"
-echo -e "${YELLOW}TurkmenBot Güncelleme Aracı${NC}"
-echo ""
+echo -e "${GREEN}ChatBot Täzeleme Skripti${NC}"
+echo "----------------------------------------"
 
-# Root kontrolü
-if [ "$(id -u)" != "0" ]; then
-    echo -e "${RED}Bu işlem için root yetkileri gerekiyor.${NC}"
-    echo -e "Lütfen ${YELLOW}sudo ./update.sh${NC} komutu ile tekrar deneyin."
-    exit 1
+# Root barlagy
+if [ "$EUID" -ne 0 ]; then
+  echo -e "${RED}Bu skripti root hökmünde işlediň (sudo ulanyň)${NC}"
+  exit 1
 fi
 
-# Kurulum dizini
-INSTALL_DIR="/opt/turkmenbot"
+# Gurnalyş katalogy
+INSTALL_DIR="/opt/chatbot"
+SERVICE_NAME="chatbot"
 
-# Mevcut .env dosyasını yedekle
-echo -e "\n${BLUE}Mevcut yapılandırmalar yedekleniyor...${NC}"
-if [ -f "$INSTALL_DIR/.env" ]; then
-    cp $INSTALL_DIR/.env $INSTALL_DIR/.env.backup
-    echo -e "${GREEN}Yapılandırma dosyası yedeklendi: .env.backup${NC}"
+# Katalog barlagy
+if [ ! -d "$INSTALL_DIR" ]; then
+  echo -e "${RED}ChatBot gurnalyşy tapylmady. Ilki bilen gurnalyş skriptini işlediň.${NC}"
+  exit 1
 fi
 
-# Servisi durdur
-echo -e "\n${BLUE}Bot servisi durduruluyor...${NC}"
-systemctl stop turkmenbot
+# Hyzmatyň işleýändigini barla
+if systemctl is-active --quiet $SERVICE_NAME; then
+  BOT_RUNNING=true
+  echo -e "${YELLOW}Bot hyzmaty wagtlaýyn durdurylýar...${NC}"
+  systemctl stop $SERVICE_NAME
+else
+  BOT_RUNNING=false
+  echo -e "${YELLOW}Bot hyzmaty işlemeýär, täzelemeden soň başlatylmaz.${NC}"
+fi
 
-# Güncellemeleri kontrol et
-echo -e "\n${BLUE}Güncellemeler kontrol ediliyor...${NC}"
+# Git ambaryna geç
 cd $INSTALL_DIR
-git fetch
 
-# Değişiklikleri kontrol et
+# Bar bolan konfigurasiýany ätiýaçla
+echo -e "${YELLOW}Konfigurasiýa faýllary ätiýaçlanýar...${NC}"
+if [ -f ".env" ]; then
+  cp .env .env.backup
+fi
+
+# Täzelemeleri çek
+echo -e "${YELLOW}Täzelemeleri barlaýar...${NC}"
+git fetch origin
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse @{u})
 
 if [ "$LOCAL" = "$REMOTE" ]; then
-    echo -e "${GREEN}Bot zaten güncel.${NC}"
+  echo -e "${GREEN}ChatBot eýýäm iň soňky wersiýasyndadyr.${NC}"
 else
-    echo -e "${YELLOW}Yeni güncellemeler bulundu. İndiriliyor...${NC}"
-    
-    # Değişiklikleri kaydet
-    git stash
-    
-    # Güncellemeleri al
-    git pull
-    
-    # Python bağımlılıklarını güncelle
-    echo -e "\n${BLUE}Python bağımlılıkları güncelleniyor...${NC}"
-    pip3 install -r requirements.txt --upgrade
-    
-    echo -e "${GREEN}Güncelleme tamamlandı.${NC}"
+  echo -e "${YELLOW}Täzelemeler bar. Täzelenýär...${NC}"
+  
+  # Repository-ni täzele
+  git pull
+  
+  # Baglylyky guramalary täzele
+  echo -e "${YELLOW}Baglylyky guramalary täzelenýär...${NC}"
+  source venv/bin/activate
+  pip install -r requirements.txt
+  
+  echo -e "${GREEN}ChatBot üstünlikli täzelendi!${NC}"
+  
+  # Wersiýa maglumatyny görkez
+  if [ -f "version.txt" ]; then
+    VERSION=$(cat version.txt)
+    echo -e "${GREEN}Täzelenen wersiýa: ${VERSION}${NC}"
+  fi
 fi
 
-# Yedeklenen .env dosyasını geri yükle
-if [ -f "$INSTALL_DIR/.env.backup" ]; then
-    cp $INSTALL_DIR/.env.backup $INSTALL_DIR/.env
-    echo -e "${GREEN}Yapılandırma dosyası geri yüklendi.${NC}"
+# Ätiýaçlanan konfigurasiýany dikelt
+if [ -f ".env.backup" ]; then
+  cp .env.backup .env
+  rm .env.backup
 fi
 
-# Servisi yeniden başlat
-echo -e "\n${BLUE}Bot servisi yeniden başlatılıyor...${NC}"
-systemctl start turkmenbot
+# Eger işleýän bolsa, hyzmaty täzeden başlat
+if [ "$BOT_RUNNING" = true ]; then
+  echo -e "${YELLOW}Bot hyzmaty täzeden başladylýar...${NC}"
+  systemctl start $SERVICE_NAME
+fi
 
-# Bot durumu
-echo -e "\n${GREEN}Bot başarıyla güncellendi!${NC}"
-echo -e "Bot durumu: $(systemctl is-active turkmenbot)"
-echo "" 
+echo -e "${GREEN}Prosess tamamlandy.${NC}"
+echo -e "${GREEN}Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)${NC}" 

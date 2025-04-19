@@ -1,73 +1,73 @@
 #!/bin/bash
 
-# TurkmenBot kurulum betiği
-# Copyright (c) 2023 TurkmenBot
+# ChatBot gurnalyş skripti
+# Copyright (c) 2023-2024 hackedcdn
 
-# Renk tanımlamaları
+# Reňk kesgitlemeleri
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 RED='\033[0;31m'
-NC='\033[0m' # Rengi sıfırla
+NC='\033[0m' # Reňki nol et
 
-echo -e "${GREEN}TurkmenBot Kurulum Betiği${NC}"
+echo -e "${GREEN}ChatBot Gurnalyş Skripti${NC}"
 echo "----------------------------------------"
 
-# Root kontrolü
+# Root barlagy
 if [ "$EUID" -ne 0 ]; then
-  echo -e "${RED}Lütfen bu betiği root olarak çalıştırın (sudo kullanın)${NC}"
+  echo -e "${RED}Bu skripti root hökmünde işlediň (sudo ulanyň)${NC}"
   exit 1
 fi
 
-# Sistem güncellemesi
-echo -e "${YELLOW}Sistem güncelleniyor...${NC}"
+# Ulgam täzelenmesi
+echo -e "${YELLOW}Ulgam täzelenýär...${NC}"
 apt update && apt upgrade -y
 
-# Gerekli paketlerin kurulumu
-echo -e "${YELLOW}Gerekli paketler kuruluyor...${NC}"
+# Zerur paketleriň gurnalyşy
+echo -e "${YELLOW}Zerur paketler gurnalyar...${NC}"
 apt install -y python3 python3-pip python3-venv git screen
 
-# Kurulum dizini
-INSTALL_DIR="/opt/turkmenbot"
+# Gurnalyş katalogy
+INSTALL_DIR="/opt/chatbot"
 
-# Önceki kurulum kontrolü
+# Öňki gurnalyş barlagy
 if [ -d "$INSTALL_DIR" ]; then
-  echo -e "${YELLOW}Önceki kurulum tespit edildi. Ne yapmak istersiniz?${NC}"
-  echo "1) Kaldır ve yeniden kur"
-  echo "2) Çık"
-  read -p "Seçiminiz (1/2): " choice
+  echo -e "${YELLOW}Öňki gurnalyş tapyldy. Näme etmek isleýärsiňiz?${NC}"
+  echo "1) Aýyr we täzeden gurna"
+  echo "2) Çyk"
+  read -p "Saýlawyňyz (1/2): " choice
   
   if [ "$choice" = "1" ]; then
-    echo -e "${YELLOW}Önceki kurulum kaldırılıyor...${NC}"
+    echo -e "${YELLOW}Öňki gurnalyş aýrylýar...${NC}"
     rm -rf "$INSTALL_DIR"
   else
-    echo -e "${YELLOW}Kurulum iptal edildi.${NC}"
+    echo -e "${YELLOW}Gurnalyş ýatyryldy.${NC}"
     exit 0
   fi
 fi
 
-# Kurulum dizinini oluştur
+# Gurnalyş katalogyny döret
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-# Bot kodlarını indir
-echo -e "${YELLOW}Bot kodları indiriliyor...${NC}"
-git clone https://github.com/USERNAME/TurkmenBot.git .
+# Bot kodlaryny ýükle
+echo -e "${YELLOW}Bot kodlary ýüklenýär...${NC}"
+git clone https://github.com/hackedcdn/chatbot.git .
 
-# Sanal ortam oluştur ve bağımlılıkları kur
-echo -e "${YELLOW}Python sanal ortamı oluşturuluyor...${NC}"
+# Wirtual gurşaw döret we baglylyky guramalary gurna
+echo -e "${YELLOW}Python wirtual gurşawy döredilýär...${NC}"
 python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Yapılandırma dosyası oluştur
-echo -e "${YELLOW}Yapılandırma dosyası oluşturuluyor...${NC}"
+# Konfigurasiýa faýlyny döret
+echo -e "${YELLOW}Konfigurasiýa faýly döredilýär...${NC}"
 if [ ! -f ".env" ]; then
-  echo -e "${GREEN}Bot yapılandırmasını ayarlayalım${NC}"
+  echo -e "${GREEN}Bot konfigurasiýasyny sazlalyň${NC}"
   read -p "Telegram Bot Token: " bot_token
-  read -p "MongoDB URI (örn: mongodb://localhost:27017): " mongodb_uri
-  read -p "MongoDB Veritabanı Adı: " db_name
-  read -p "Admin Kullanıcı ID: " admin_id
+  read -p "MongoDB URI (mysaly: mongodb://localhost:27017): " mongodb_uri
+  read -p "MongoDB Maglumat Bazasynyň Ady: " db_name
+  read -p "Admin Ulanyjy ID: " admin_id
   
   cat > .env << EOL
 BOT_TOKEN=$bot_token
@@ -76,16 +76,16 @@ DATABASE_NAME=$db_name
 ADMIN_ID=$admin_id
 EOL
   
-  echo -e "${GREEN}Yapılandırma dosyası başarıyla oluşturuldu${NC}"
+  echo -e "${GREEN}Konfigurasiýa faýly üstünlikli döredildi${NC}"
 else
-  echo -e "${YELLOW}Mevcut .env dosyası korundu${NC}"
+  echo -e "${YELLOW}Bar bolan .env faýly goraldy${NC}"
 fi
 
-# Servis dosyası oluştur
-echo -e "${YELLOW}Sistem servisi oluşturuluyor...${NC}"
-cat > /etc/systemd/system/turkmenbot.service << EOL
+# Hyzmat faýlyny döret
+echo -e "${YELLOW}Ulgam hyzmaty döredilýär...${NC}"
+cat > /etc/systemd/system/chatbot.service << EOL
 [Unit]
-Description=TurkmenBot Telegram Bot Service
+Description=ChatBot Telegram Bot Service
 After=network.target
 
 [Service]
@@ -97,106 +97,105 @@ Restart=on-failure
 RestartSec=10
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=turkmenbot
+SyslogIdentifier=chatbot
 
 [Install]
 WantedBy=multi-user.target
 EOL
 
-# Yönetim paneli betiği
-echo -e "${YELLOW}Yönetim paneli betiği oluşturuluyor...${NC}"
+# Dolandyryş paneli skripti
+echo -e "${YELLOW}Dolandyryş paneli skripti döredilýär...${NC}"
 cat > /usr/local/bin/botpanel << EOL
 #!/bin/bash
 
-# TurkmenBot Yönetim Paneli
+# ChatBot Dolandyryş Paneli
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
 clear
-echo -e "\${GREEN}TurkmenBot Yönetim Paneli\${NC}"
+echo -e "\${GREEN}ChatBot Dolandyryş Paneli\${NC}"
 echo "----------------------------------------"
 
-# Bot durumunu kontrol et
-if systemctl is-active --quiet turkmenbot.service; then
-  echo -e "Bot Durumu: \${GREEN}Çalışıyor\${NC}"
+# Bot ýagdaýyny barla
+if systemctl is-active --quiet chatbot.service; then
+  echo -e "Bot Ýagdaýy: \${GREEN}Işleýär\${NC}"
 else
-  echo -e "Bot Durumu: \${RED}Durduruldu\${NC}"
+  echo -e "Bot Ýagdaýy: \${RED}Durdurylan\${NC}"
 fi
 
 echo ""
-echo "1) Botu başlat"
-echo "2) Botu durdur"
-echo "3) Botu yeniden başlat"
-echo "4) Bot loglarını göster"
-echo "5) Yapılandırmayı düzenle"
-echo "6) Botu güncelle"
-echo "7) Çıkış"
+echo "1) Boty başlat"
+echo "2) Boty durdur"
+echo "3) Boty täzeden başlat"
+echo "4) Bot loglaryny görkez"
+echo "5) Konfigurasiýany redaktirle"
+echo "6) Boty täzele"
+echo "7) Çykyş"
 echo ""
-read -p "Seçiminiz: " choice
+read -p "Saýlawyňyz: " choice
 
 case \$choice in
   1)
-    systemctl start turkmenbot.service
-    echo -e "\${GREEN}Bot başlatıldı\${NC}"
+    systemctl start chatbot.service
+    echo -e "\${GREEN}Bot başladyldy\${NC}"
     ;;
   2)
-    systemctl stop turkmenbot.service
-    echo -e "\${YELLOW}Bot durduruldu\${NC}"
+    systemctl stop chatbot.service
+    echo -e "\${YELLOW}Bot durduryldy\${NC}"
     ;;
   3)
-    systemctl restart turkmenbot.service
-    echo -e "\${GREEN}Bot yeniden başlatıldı\${NC}"
+    systemctl restart chatbot.service
+    echo -e "\${GREEN}Bot täzeden başladyldy\${NC}"
     ;;
   4)
-    journalctl -u turkmenbot.service -f
+    journalctl -u chatbot.service -f
     ;;
   5)
     nano $INSTALL_DIR/.env
-    echo -e "\${YELLOW}Yapılandırma güncellendi, yeniden başlatılıyor...\${NC}"
-    systemctl restart turkmenbot.service
+    echo -e "\${YELLOW}Konfigurasiýa täzelendi, täzeden başladylýar...\${NC}"
+    systemctl restart chatbot.service
     ;;
   6)
     cd $INSTALL_DIR
     git pull
     source venv/bin/activate
     pip install -r requirements.txt
-    systemctl restart turkmenbot.service
-    echo -e "\${GREEN}Bot güncellendi ve yeniden başlatıldı\${NC}"
+    systemctl restart chatbot.service
+    echo -e "\${GREEN}Bot täzelendi we täzeden başladyldy\${NC}"
     ;;
   7)
     exit 0
     ;;
   *)
-    echo -e "\${RED}Geçersiz seçim\${NC}"
+    echo -e "\${RED}Nädogry saýlaw\${NC}"
     ;;
 esac
 EOL
 
-# Yönetim paneli betiğini çalıştırılabilir yap
+# Dolandyryş paneli skriptini işledilýän et
 chmod +x /usr/local/bin/botpanel
 
-# Güncelleme betiği
-echo -e "${YELLOW}Güncelleme betiği oluşturuluyor...${NC}"
+# Täzeleme skripti
+echo -e "${YELLOW}Täzeleme skripti döredilýär...${NC}"
 cat > "$INSTALL_DIR/update.sh" << EOL
 #!/bin/bash
 cd $INSTALL_DIR
 git pull
 source venv/bin/activate
 pip install -r requirements.txt
-systemctl restart turkmenbot.service
-echo "TurkmenBot güncellendi"
+systemctl restart chatbot.service
+echo "ChatBot täzelendi"
 EOL
 
 chmod +x "$INSTALL_DIR/update.sh"
 
-# Servisi başlat
-echo -e "${YELLOW}Servis başlatılıyor...${NC}"
+# Hyzmaty başlat
+echo -e "${YELLOW}Hyzmat başladylýar...${NC}"
 systemctl daemon-reload
-systemctl enable turkmenbot.service
-systemctl start turkmenbot.service
+systemctl enable chatbot.service
+systemctl start chatbot.service
 
-echo -e "${GREEN}TurkmenBot başarıyla kuruldu!${NC}"
-echo -e "Yönetim paneline erişmek için ${YELLOW}sudo botpanel${NC} komutunu kullanabilirsiniz."
-echo "----------------------------------------" 
+echo -e "${GREEN}ChatBot üstünlikli guruldy!${NC}"
+echo -e "${GREEN}Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)${NC}" 

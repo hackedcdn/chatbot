@@ -1,58 +1,58 @@
-# TurkmenBot - Telegram Grup Yönetim Botu 🤖
+# ChatBot - Turkmenistan üçin Telegram boty 🤖
 
-TurkmenBot, Telegram gruplarınızı kolayca yönetmenizi sağlayan çok dilli bir bot çözümüdür. Üç dil desteği (Türkmence, Türkçe, Rusça) ile grup yönetimini basit ve etkili bir şekilde gerçekleştirebilirsiniz.
+ChatBot, Telegram gruplaryny dolandyrmak üçin Türkmençe dilli çözgütdir. Turkmenistan üçin ýörite taýýarlanan bu bot bilen gruplarynyz aňsat we täsirli usulda dolandyryp bilersiňiz.
 
-## Özellikler ✨
+## Aýratynlyklar ✨
 
-- **Grup Yönetimi:** Üyeleri yasaklama, susturma, uyarı verme gibi temel moderasyon işlemleri
-- **Otomatik Moderasyon:** İstenmeyen içeriklere karşı otomatik koruma
-- **Çok Dilli Destek:** Türkmence, Türkçe ve Rusça dil seçenekleri
-- **Özelleştirilebilir Komutlar:** Grubunuza özel komutlar oluşturabilme
-- **Karşılama Mesajları:** Yeni üyelere özelleştirilebilir karşılama mesajları
-- **İstatistikler:** Grup aktivite istatistiklerini görüntüleme
-- **Admin-Only Komutlar:** Yalnızca yöneticilerin kullanabileceği özel komutlar
+- **Topar Dolandyryş:** Agzalary gadagan etmek, sessiz etmek, duýduryş bermek ýaly esasy moderasiýa işleri
+- **Awtomatik Moderasiýa:** Islenilmeýän mazmuny öňünden saklamak 
+- **Türkmençe Interfeýs:** Türkmençe dil goldawy
+- **Özelleşdirilýän Buýruklar:** Toparyňyz üçin ýörite buýruklar döredip bilmek
+- **Hoş geldiňiz Habarlary:** Täze agzalar üçin özelleşdirilýän hoş geldiňiz habarlary
+- **Statistikalar:** Topar işjeňliginiň statistikalaryny görmek
+- **Diňe Administrator Buýruklary:** Diňe administratorlaryň ulanyp biljek ýörite buýruklar
 
-## Kurulum 🛠️
+## Gurnalyş 🛠️
 
-### Sistem Gereksinimleri
+### Ulgam Talaplary
 
 - Python 3.8+
 - MongoDB
-- Telegram Bot Token (BotFather'dan alınabilir)
+- Telegram Bot Token (BotFather-dan alyp bolar)
 
-### Otomatik Kurulum (Ubuntu)
+### Awtomatik Gurnalyş (Ubuntu)
 
-TurkmenBot'u Ubuntu sunucunuza kurmak için:
+ChatBot-y Ubuntu serwerinizde gurmak üçin:
 
 ```bash
-# Kurulum betiğini indirin
-wget -O install.sh https://raw.githubusercontent.com/hackedzed/TurkmenBot/main/install.sh
+# Gurnalyş skriptini ýükläň
+wget -O install.sh https://raw.githubusercontent.com/hackedcdn/chatbot/main/install.sh
 
-# Yürütme iznini verin
+# Ýerine ýetirmek ygtyýaryny beriň
 chmod +x install.sh
 
-# Kurulumu başlatın
+# Gurnalyşy başladyň
 sudo ./install.sh
 ```
 
-Kurulum sihirbazı size Bot Token ve diğer gerekli bilgileri soracaktır.
+Gurnalyş wizardy size Bot Token we beýleki gerekli maglumatlary sorar.
 
-### Manuel Kurulum
+### El bilen Gurnalyş
 
-1. Repoyu klonlayın:
+1. Repony klonlaň:
    ```bash
-   git clone https://github.com/USERNAME/TurkmenBot.git
-   cd TurkmenBot
+   git clone https://github.com/hackedcdn/chatbot.git
+   cd chatbot
    ```
 
-2. Sanal ortam oluşturun ve bağımlılıkları yükleyin:
+2. Wirtual gurşaw döredip, baglylyky guramalary gurnap alyň:
    ```bash
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
    ```
 
-3. `.env` dosyasını oluşturun:
+3. `.env` faýlyny dörediň:
    ```
    BOT_TOKEN=your_telegram_bot_token
    MONGODB_URI=mongodb://localhost:27017
@@ -60,66 +60,65 @@ Kurulum sihirbazı size Bot Token ve diğer gerekli bilgileri soracaktır.
    ADMIN_ID=your_telegram_id
    ```
 
-4. Botu başlatın:
+4. Boty başladyň:
    ```bash
    python bot.py
    ```
 
-## Kullanım 📝
+## Ulanmak 📝
 
-### Temel Komutlar
+### Esasy Buýruklar
 
-- `/start` - Botu başlatır ve yardım menüsünü gösterir
-- `/help` - Kullanılabilir komutları listeler
-- `/settings` - Bot ayarlarını düzenler
-- `/lang` - Bot dilini değiştirir
-- `/stats` - Grup istatistiklerini görüntüler
-- `/version` - Bot versiyonunu gösterir
+- `/start` - Boty başladyp, kömek menýusyny görkezýär
+- `/help` - Elýeterli buýruklary görkezýär
+- `/settings` - Bot sazlamalaryny düzedýär
+- `/stats` - Topar statistikalaryny görkezýär
+- `/version` - Bot wersiýasyny görkezýär
 
-### Admin Komutları
+### Administrator Buýruklary
 
-- `/ban` - Kullanıcıyı gruptan yasaklar
-- `/unban` - Kullanıcının yasağını kaldırır
-- `/mute` - Kullanıcıyı susturur
-- `/unmute` - Kullanıcının susturmasını kaldırır
-- `/warn` - Kullanıcıya uyarı verir
-- `/unwarn` - Kullanıcının uyarısını kaldırır
-- `/pin` - Mesajı sabitler
-- `/unpin` - Sabitlenmiş mesajı kaldırır
-- `/add_command` - Özel komut ekler
+- `/ban` - Ulanyjyny topardan gadagan edýär
+- `/unban` - Ulanyjynyň gadaganyny aýyrýar
+- `/mute` - Ulanyjyny sessiz edýär
+- `/unmute` - Ulanyjynyň sessizligini aýyrýar
+- `/warn` - Ulanyjy duýduryş berýär
+- `/unwarn` - Ulanyjynyň duýduryşyny aýyrýar
+- `/pin` - Habary berkidýär
+- `/unpin` - Berkidilen habary aýyrýar
+- `/add_command` - Ýörite buýruk goşýar
 
-## Yönetim Paneli 🖥️
+## Dolandyryş Paneli 🖥️
 
-TurkmenBot, kolay yönetim için bir terminal tabanlı yönetim paneli sunar. Panele erişmek için:
+ChatBot, aňsat dolandyrmak üçin terminal esasly dolandyryş panelini hödürleýär. Panele girmek üçin:
 
 ```bash
 sudo botpanel
 ```
 
-Yönetim paneli aracılığıyla şunları yapabilirsiniz:
-- Botu başlatma, durdurma ve yeniden başlatma
-- Bot loglarını görüntüleme
-- Yapılandırmayı düzenleme
-- Botu güncelleme
+Dolandyryş paneli arkaly şulary edip bilersiňiz:
+- Boty başlatmak, duruzmak we täzeden başlatmak
+- Bot loglaryny görmek
+- Konfigurasiýany redaktirlemek
+- Boty täzelemek
 
-## Güncelleme ⬆️
+## Täzelemek ⬆️
 
-Botu güncellemek için yönetim panelini kullanabilir veya şu komutu çalıştırabilirsiniz:
+Boty täzelemek üçin dolandyryş panelini ulanyp bilersiňiz ýa-da şu buýrugy işledip bilersiňiz:
 
 ```bash
 sudo /opt/turkmenbot/update.sh
 ```
 
-## Lisans 📄
+## Ygtyýarnama 📄
 
-Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
+Bu taslama [MIT Ygtyýarnamasy](LICENSE) bilen ygtyýarlandyrylan.
 
-## İletişim 📞
+## Habarlaşmak 📞
 
-Sorularınız için:
-- Telegram: [@TurkmenBot_Support](https://t.me/TurkmenBot_Support)
-- Email: info@turkmenbot.com
+Soraglaryňyz üçin:
+- GitHub: [@hackedcdn](https://github.com/hackedcdn/chatbot)
 
 ---
 
-**TurkmenBot** - Telegram gruplarınızı daha güvenli ve daha kolay yönetin! 
+**ChatBot** - Turkmenistan üçin döredilen Telegram boty! 
+*Dolandyryjy: hackedcdn* 

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# ChatBot - Turkmenistan üçin chatbot
+# Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)
 
 import os
 import logging
@@ -39,12 +41,12 @@ try:
     users_collection = db["users"]
     groups_collection = db["groups"]
     mutes_collection = db["mutes"]
-    logger.info("Connected to MongoDB successfully")
+    logger.info("MongoDB bilen baglanyşyk üstünlikli boldy")
 except ConnectionFailure as e:
-    logger.error(f"Could not connect to MongoDB: {e}")
+    logger.error(f"MongoDB bilen baglanyşyk edip bolmady: {e}")
     exit(1)
 
-# Dil desteği
+# Dil desteği - sadece Türkmence
 LANGUAGES = {
     "tm": "Türkmençe"
 }
@@ -82,6 +84,9 @@ TRANSLATIONS = {
     },
     "group_only": {
         "tm": "Bu buýruk diňe gruppalarda elýeterlidir."
+    },
+    "owner_info": {
+        "tm": "Bu bot hackedcdn (https://github.com/hackedcdn/chatbot) tarapyndan döredildi."
     }
 }
 
@@ -123,7 +128,7 @@ async def get_text(key, user_id, **kwargs):
     lang = await get_user_language(user_id)
     if lang not in LANGUAGES:
         lang = "tm"
-    text = LANGUAGES[lang].get(key, LANGUAGES["tm"].get(key, f"Translation missing: {key}"))
+    text = TRANSLATIONS[lang].get(key, TRANSLATIONS["tm"].get(key, f"Translation missing: {key}"))
     return text.format(**kwargs) if kwargs else text
 
 # Komut işleyicileri
@@ -131,13 +136,19 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     await save_user_data(user.id, user.username, user.first_name)
     
-    await update.message.reply_text(TRANSLATIONS["welcome"]["tm"])
+    welcome_message = TRANSLATIONS["welcome"]["tm"]
+    owner_info = TRANSLATIONS["owner_info"]["tm"]
+    
+    await update.message.reply_text(f"{welcome_message}\n\n{owner_info}")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     await save_user_data(user.id, user.username, user.first_name)
     
-    await update.message.reply_text(TRANSLATIONS["help"]["tm"])
+    help_text = TRANSLATIONS["help"]["tm"]
+    owner_info = TRANSLATIONS["owner_info"]["tm"]
+    
+    await update.message.reply_text(f"{help_text}\n\n{owner_info}")
 
 async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -211,7 +222,7 @@ async def unban_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(TRANSLATIONS["admin_only"]["tm"])
         return
     
-    if not context.args or not update.message.reply_to_message:
+    if not update.message.reply_to_message:
         await update.message.reply_text("Ulanmak: /unban")
         return
     
@@ -332,10 +343,10 @@ async def unmute_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
-    
-    user_id = query.from_user.id
     data = query.data
+    user_id = query.from_user.id
+    
+    await query.answer()
     
     if data == "settings_main":
         keyboard = []
@@ -353,16 +364,18 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(text=TRANSLATIONS["settings"]["tm"])
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    chat_type = update.effective_chat.type
+    if not update.effective_user or not update.message:
+        return
     
-    # Kullanıcının son etkinlik bilgisini güncelle
+    user = update.effective_user
+    message = update.message
+    chat_id = update.effective_chat.id
+    
+    # Kullanıcı kaydı
     await save_user_data(user.id, user.username, user.first_name)
     
     # Gruplar için istatistikleri güncelle
-    if chat_type in ["group", "supergroup"]:
-        chat_id = update.effective_chat.id
-        
+    if chat_id in ["group", "supergroup"]:
         await asyncio.to_thread(
             groups_collection.update_one,
             {"chat_id": chat_id},
@@ -373,30 +386,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             upsert=True
         )
 
-# Ana işlev
 def main():
     # Uygulama oluştur
     application = Application.builder().token(BOT_TOKEN).build()
     
-    # Komut işleyicileri ekle
+    # Komut işleyicileri
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("settings", settings_command))
     application.add_handler(CommandHandler("stats", stats_command))
-    
-    # Admin komutları
     application.add_handler(CommandHandler("ban", ban_command))
     application.add_handler(CommandHandler("unban", unban_command))
     application.add_handler(CommandHandler("mute", mute_command))
     application.add_handler(CommandHandler("unmute", unmute_command))
     
-    # Callback sorguları işleyicisi
+    # Callback ve mesaj işleyicileri
     application.add_handler(CallbackQueryHandler(button_callback))
-    
-    # Mesaj işleyicisi
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     # Uygulamayı başlat
+    logger.info("ChatBot - Turkmenistan üçin chatbot başladylýar (Eýesi: hackedcdn)")
+    print("ChatBot - Turkmenistan üçin chatbot başladylýar (Eýesi: hackedcdn)")
+    print("GitHub: https://github.com/hackedcdn/chatbot")
     application.run_polling()
 
 if __name__ == "__main__":
