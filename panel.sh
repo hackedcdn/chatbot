@@ -71,6 +71,23 @@ fi
 # Ekrany arassala
 clear
 
+# Ätiýaçly bolmak üçin awtomatiki düzediş funksiýany başda çagyr
+# systemctl komandasy näsazlyklary ekrana görkezmez ýaly çağyr
+echo -ne "${YELLOW}Botda näsazlyk barmy diýip barlanýar...${NC}"
+if ! systemctl is-active --quiet $SERVICE_NAME 2>/dev/null || ! systemctl is-active --quiet mongod 2>/dev/null; then
+  echo -e " ${RED}Hawa${NC}"
+  echo -e "${YELLOW}Awtomatiki näsazlyk düzediji işledilýär... (Bu biraz wagt alyp biler)${NC}"
+  autofix_common_issues
+  sleep 1
+  echo -e "${GREEN}Näsazlyklar düzedildi!${NC}"
+  echo -e "${YELLOW}Panel 3 sekuntdan soň açylar... ${NC}"
+  sleep 3
+else
+  echo -e " ${GREEN}Ýok${NC}"
+fi
+
+clear
+
 # Banner görkez
 echo -e "${BLUE}"
 echo "   _____ _           _   ____        _   "
@@ -305,118 +322,168 @@ EOL
 
 # MongoDB näsazlyklary we .env faýlynyň formatyny awtomatiki barla we düzet
 autofix_common_issues() {
-  echo -e "${YELLOW}Umumy meseleleri barlaýar we düzedýär...${NC}"
+  # Ätiýaçly bolmak üçin howpsuz ýerinde amaly ýerine ýetir
+  (
+    echo -e "${YELLOW}Awtomatiki näsazlyk düzediş başlaýar...${NC}"
   
-  # MongoDB işleýşini barla we düzet
-  echo -ne "${YELLOW}MongoDB hyzmatyny barlaýar...${NC} "
-  if ! systemctl is-active --quiet mongod; then
-    echo -e " ${RED}MongoDB işlemeýär, işledilýär...${NC}"
-    systemctl start mongod > /dev/null 2>&1 &
-    PID=$!
-    progress_bar "MongoDB işledilýär" $PID 3
-    wait $PID
+    # MongoDB işleýşini barla we düzet
+    if ! systemctl is-active --quiet mongod; then
+      echo -e "${YELLOW}MongoDB işlemeýär, işledilýär...${NC}"
+      systemctl start mongod > /dev/null 2>&1 || true
+      sleep 2
     
-    if systemctl is-active --quiet mongod; then
-      echo -e "${GREEN}MongoDB üstünlikli işledildi ✓${NC}"
-    else
-      echo -e "${RED}MongoDB işledip bolmady. Häzir gurnamaga synanyşylýar...${NC}"
-      apt-get update > /dev/null 2>&1
-      apt-get install -y mongodb-org > /dev/null 2>&1
-      systemctl enable mongod > /dev/null 2>&1
-      systemctl start mongod > /dev/null 2>&1
-      
-      if systemctl is-active --quiet mongod; then
-        echo -e "${GREEN}MongoDB üstünlikli gurnalyp işledildi ✓${NC}"
-      else
-        echo -e "${RED}MongoDB gurnalyp bilmedi. El bilen gurmaly bolar.${NC}"
+      if ! systemctl is-active --quiet mongod; then
+        echo -e "${YELLOW}MongoDB işlemeýär, täzeden gurnamaga synanyşylýar...${NC}"
+        
+        # Önce şimdiki ubuntu/debian sürümünü belirleyip doğru depoyu ekleyelim
+        if [ -f /etc/lsb-release ]; then
+          source /etc/lsb-release
+          CODENAME=$DISTRIB_CODENAME
+        elif [ -f /etc/os-release ]; then
+          source /etc/os-release
+          CODENAME=$(lsb_release -cs 2>/dev/null || echo "")
+        fi
+        
+        # MongoDB deposunu ekleyelim
+        wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add - > /dev/null 2>&1 || true
+        
+        # Uygun depo URL'sini oluşturalım
+        if [ ! -z "$CODENAME" ]; then
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $CODENAME/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list > /dev/null 2>&1 || true
+        else
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list > /dev/null 2>&1 || true
+        fi
+        
+        # Depoları güncelleyip MongoDB'yi kuralım
+        apt-get update > /dev/null 2>&1 || true
+        apt-get install -y mongodb-org > /dev/null 2>&1 || true
+        
+        # Servis dosyasını oluşturalım (yoksa)
+        if [ ! -f /lib/systemd/system/mongod.service ]; then
+          cat > /lib/systemd/system/mongod.service << EOL
+[Unit]
+Description=MongoDB Database Server
+Documentation=https://docs.mongodb.org/manual
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=mongodb
+Group=mongodb
+EnvironmentFile=-/etc/default/mongod
+ExecStart=/usr/bin/mongod --config /etc/mongod.conf
+PIDFile=/var/run/mongodb/mongod.pid
+# file size
+LimitFSIZE=infinity
+# cpu time
+LimitCPU=infinity
+# virtual memory size
+LimitAS=infinity
+# open files
+LimitNOFILE=64000
+# processes/threads
+LimitNPROC=64000
+# locked memory
+LimitMEMLOCK=infinity
+# total threads (user+kernel)
+TasksMax=infinity
+TasksAccounting=false
+# Recommended limits for mongod as specified in
+# https://docs.mongodb.com/manual/reference/ulimit/#recommended-ulimit-settings
+
+[Install]
+WantedBy=multi-user.target
+EOL
+        fi
+        
+        # Servis dosyasını etkinleştirip başlatalım
+        systemctl daemon-reload > /dev/null 2>&1 || true
+        systemctl enable mongod > /dev/null 2>&1 || true
+        systemctl start mongod > /dev/null 2>&1 || true
+        
+        sleep 3
       fi
     fi
-  else
-    echo -e " ${GREEN}MongoDB eýýäm işleýär ✓${NC}"
-  fi
   
-  # .env faýlynyň formatyny barla we düzet
-  CONFIG_FILE="$INSTALL_DIR/.env"
-  echo -ne "${YELLOW}.env faýlynyň formatyny barlaýar...${NC} "
+    # .env faýlynyň formatyny barla we düzet
+    CONFIG_FILE="$INSTALL_DIR/.env"
+    echo -e "${YELLOW}.env faýly täzelenýär...${NC}"
   
-  # .env faýlynyň formaty barla
-  if [ -f "$CONFIG_FILE" ]; then
-    # Ätiýaçlyk nusgasyny döret
-    cp $CONFIG_FILE ${CONFIG_FILE}.backup.$(date +%Y%m%d%H%M%S)
-    
-    # .env faýlyndan maglumatlary çykaryp, täze formatda ýazmak
-    BOT_TOKEN=$(grep -i "BOT_TOKEN" $CONFIG_FILE | cut -d= -f2- | tr -d ' ' || echo "")
-    MONGODB_URI=$(grep -i "MONGO.*URI\|MONGODB_URI\|MONGO_URI" $CONFIG_FILE | cut -d= -f2- | tr -d ' ' || echo "mongodb://localhost:27017")
-    DB_NAME=$(grep -i "DB_NAME\|DATABASE\|DATABASE_NAME" $CONFIG_FILE | cut -d= -f2- | tr -d ' ' || echo "chatbot_db")
-    ADMIN_ID=$(grep -i "ADMIN.*ID\|ADMIN_ID" $CONFIG_FILE | cut -d= -f2- | tr -d ' ' || echo "123456789")
-    
-    # Eger BOT_TOKEN ýa ADMIN_ID boş bolsa, bot işläp bilmez
-    if [ -z "$BOT_TOKEN" ]; then
-      BOT_TOKEN="TOKEN_PLACEHOLDER"
-      echo -e "\n${RED}Bot tokeni tapylmady! Panelde '7) Konfigurasiýany redaktirle' saýlaň we dogry tokeni ýazyň.${NC}"
-    fi
-    
-    if [ -z "$ADMIN_ID" ] || [ "$ADMIN_ID" = "" ]; then
-      ADMIN_ID="123456789"
-      echo -e "\n${RED}Admin ID boş ýa-da nädogry! Panelde '7) Konfigurasiýany redaktirle' saýlaň we dogry ID ýazyň.${NC}"
-    fi
-    
-    # Täze dogry formatda .env faýlyny döret
-    cat > $CONFIG_FILE << EOL
-BOT_TOKEN=$BOT_TOKEN
-MONGODB_URI=$MONGODB_URI
-DATABASE_NAME=$DB_NAME
-ADMIN_ID=$ADMIN_ID
-EOL
-    echo -e " ${GREEN}Konfigurasiýa faýly täzelendi ✓${NC}"
-    
-  else
-    # .env faýly ýok bolsa, täze faýl döret
-    echo -e " ${RED}Konfigurasiýa faýly tapylmady, täze faýl döredilýär...${NC}"
-    cat > $CONFIG_FILE << EOL
-BOT_TOKEN=TOKEN_PLACEHOLDER
-MONGODB_URI=mongodb://localhost:27017
-DATABASE_NAME=chatbot_db
-ADMIN_ID=123456789
-EOL
-    echo -e "${GREEN}Standart konfigurasiýa faýly döredildi ✓${NC}"
-    echo -e "${YELLOW}Öňürdip '7) Konfigurasiýany redaktirle' saýlaň we dogry maglumatlary ýazyň.${NC}"
-  fi
-  
-  # Bot hyzmatyndaky systemd faýlynyň duýduryşlaryny düzet (loglarda görülýän)
-  if [ -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
-    echo -ne "${YELLOW}Bot hyzmaty konfigurasiýasyny barlaýar...${NC} "
-    if grep -q "StandardOutput=syslog" /etc/systemd/system/$SERVICE_NAME.service; then
-      # Köne syslog standartyna derek journal ulan
-      sed -i 's/StandardOutput=syslog/StandardOutput=journal/g' /etc/systemd/system/$SERVICE_NAME.service
-      sed -i 's/StandardError=syslog/StandardError=journal/g' /etc/systemd/system/$SERVICE_NAME.service
+    # .env faýlynyň formaty barla - dikkatli üçin daha güvenli yedek alalım
+    if [ -f "$CONFIG_FILE" ]; then
+      # Güvenli bir yedekleme dosyası oluşturalım
+      cp -f "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
       
-      systemctl daemon-reload
-      echo -e " ${GREEN}Bot hyzmaty konfigurasiýasy täzelendi ✓${NC}"
+      # Bu dosyayı bir geçici dosyaya kopyalayıp, sorunlu karakterleri kaldıralım
+      cp -f "$CONFIG_FILE" "${CONFIG_FILE}.tmp" 2>/dev/null || true
+      
+      # Dosyada sorunlu karakterleri temizleyelim
+      tr -d '\r' < "${CONFIG_FILE}.tmp" > "${CONFIG_FILE}.clean" 2>/dev/null || true
+      
+      # Dosyadan token ve admin ID değerlerini çıkaralım (her iki format içinde)
+      BOT_TOKEN=$(grep -i "BOT_TOKEN" "${CONFIG_FILE}.clean" 2>/dev/null | sed 's/.*BOT_TOKEN=//g; s/[^a-zA-Z0-9\.:_-]//g' || echo "TOKEN_PLACEHOLDER")
+      MONGODB_URI=$(grep -i "MONGO.*URI\|MONGODB_URI\|MONGO_URI" "${CONFIG_FILE}.clean" 2>/dev/null | sed 's/.*URI=//g; s/[^a-zA-Z0-9\.:_\/@-]//g' || echo "mongodb://localhost:27017")
+      DB_NAME=$(grep -i "DB_NAME\|DATABASE\|DATABASE_NAME" "${CONFIG_FILE}.clean" 2>/dev/null | sed 's/.*NAME=//g; s/[^a-zA-Z0-9\.:_-]//g' || echo "chatbot_db")
+      ADMIN_ID=$(grep -i "ADMIN.*ID\|ADMIN_ID" "${CONFIG_FILE}.clean" 2>/dev/null | sed 's/.*ID=//g; s/[^0-9]//g' || echo "123456789")
+      
+      # Geçici dosyaları temizleyelim
+      rm -f "${CONFIG_FILE}.tmp" "${CONFIG_FILE}.clean" 2>/dev/null || true
     else
-      echo -e " ${GREEN}Bot hyzmaty konfigurasiýasy dogry ✓${NC}"
+      # Standart maglumatlar
+      BOT_TOKEN="TOKEN_PLACEHOLDER"
+      MONGODB_URI="mongodb://localhost:27017"
+      DB_NAME="chatbot_db"
+      ADMIN_ID="123456789"
     fi
-  fi
+    
+    # Admin ID'si sayı değilse düzeltelim
+    if ! [[ "$ADMIN_ID" =~ ^[0-9]+$ ]]; then
+      ADMIN_ID="123456789"
+    fi
   
-  # Bot hyzmatyny täzeden başlat
-  echo -e "${YELLOW}Bot hyzmatyny täzeden başladýar...${NC}"
-  restart_bot
+    # Temiz bir .env dosyası oluşturalım
+    echo "BOT_TOKEN=$BOT_TOKEN" > "$CONFIG_FILE"
+    echo "MONGODB_URI=$MONGODB_URI" >> "$CONFIG_FILE"
+    echo "DATABASE_NAME=$DB_NAME" >> "$CONFIG_FILE"
+    echo "ADMIN_ID=$ADMIN_ID" >> "$CONFIG_FILE"
+    
+    # Dosya izinlerini düzeltelim
+    chmod 644 "$CONFIG_FILE" 2>/dev/null || true
+    echo -e "${GREEN}Konfigurasiýa faýly täzelendi ✓${NC}"
   
-  # Netije
+    # Systemd konfigurasiýany düzet
+    if [ -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
+      if grep -q "StandardOutput=syslog" /etc/systemd/system/$SERVICE_NAME.service 2>/dev/null; then
+        echo -e "${YELLOW}Bot hyzmaty konfigurasiýasy täzelenýär...${NC}"
+        # Köne syslog → journal konwertasiýa
+        sed -i 's/StandardOutput=syslog/StandardOutput=journal/g' /etc/systemd/system/$SERVICE_NAME.service 2>/dev/null || true
+        sed -i 's/StandardError=syslog/StandardError=journal/g' /etc/systemd/system/$SERVICE_NAME.service 2>/dev/null || true
+        systemctl daemon-reload > /dev/null 2>&1 || true
+      fi
+    fi
+  
+    echo -e "${GREEN}Ähli näsazlyklar düzedildi.${NC}"
+  
+    # Bot hyzmatyny täzeden başlat
+    systemctl restart $SERVICE_NAME > /dev/null 2>&1 || true
+    sleep 3
+  ) # &>/dev/null bu satırı kaldırıp hatalar görülsün
+  
   echo -e "${GREEN}Awtomatiki düzedişler tamamlandy!${NC}"
+  sleep 1
 }
 
 # Menu funksiýasy
 show_menu() {
-  clear
-  echo -e "${BLUE}"
+    clear
+    echo -e "${BLUE}"
   echo -e "   _____ _           _   ____        _   "
   echo -e "  / ____| |         | | |  _ \      | |  "
   echo -e " | |    | |__   __ _| |_| |_) | ___ | |_ "
   echo -e " | |    | '_ \ / _\` | __|  _ < / _ \| __|"
   echo -e " | |____| | | | (_| | |_| |_) | (_) | |_ "
   echo -e "  \_____|_| |_|\__,_|\__|____/ \___/ \__|"
-  echo -e "${NC}"
+    echo -e "${NC}"
   echo -e "${GREEN}ChatBot Dolandyryş Paneli${NC}"
   echo -e "${GREEN}Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)${NC}"
   echo -e "----------------------------------------"
@@ -550,13 +617,7 @@ while true; do
     show_menu
     read -r choice
     
-    # Belli bir ýagdaýlar bolsa, awtomatiki düzediş funksiýasyny çagyr
-    if ! systemctl is-active --quiet $SERVICE_NAME || ! systemctl is-active --quiet mongod; then
-        echo -e "${YELLOW}Bot işlemeýär ýa-da MongoDB näsazlygy bar. Awtomatiki düzediş başladylýar...${NC}"
-        autofix_common_issues
-        sleep 2
-    fi
-    
+    # Menýu soňunda, her saýlaw soňunda awtomatiki düzeldiş funksiýasyny çagyrmaly däl
     case $choice in
         1)
             start_bot

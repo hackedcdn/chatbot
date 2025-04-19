@@ -243,15 +243,38 @@ wait $PID
 
 # Konfigurasiýa faýlyny döret
 echo -ne "${YELLOW}Konfigurasiýa faýly döredilýär${NC} "
-cat > .env << EOL
-BOT_TOKEN=$telegram_token
-MONGODB_URI=$mongodb_uri
-DATABASE_NAME=$db_name
-ADMIN_ID=$admin_id
+
+# .env faýlyny standart formatta ýazmak, hiç hili ýalňyşlyk bolmazlyk üçin
+# \n simwoly goýulmazlyk üçin zat ýazmak
+cat > $INSTALL_DIR/.env << 'EOL'
+BOT_TOKEN='$telegram_token'
+MONGODB_URI='mongodb://localhost:27017'
+DATABASE_NAME='chatbot_db'
+ADMIN_ID='$admin_id'
 EOL
-spin "sleep 1" &
-wait $!
+
+# Indi goýlan simwollary hakyky bahalar bilen çalyşdyr
+sed -i "s/\\$telegram_token/$telegram_token/g" $INSTALL_DIR/.env
+sed -i "s/\\$admin_id/$admin_id/g" $INSTALL_DIR/.env
+
+# ' simwollaryny aýyr
+sed -i "s/'//g" $INSTALL_DIR/.env
+
+chmod 644 $INSTALL_DIR/.env
+sleep 1
 echo -e " ${GREEN}✓${NC}"
+
+# Faýl düzgünmi barla
+if grep -q "BOT_TOKEN=" $INSTALL_DIR/.env && grep -q "ADMIN_ID=" $INSTALL_DIR/.env; then
+  echo -e "${GREEN}.env faýly dogry döredildi✓${NC}"
+else
+  echo -e "${RED}.env faýly döretmek bilen mesele bar. Awtomatiki düzedilýär...${NC}"
+  # Ýönekeý usul bilen täzeden döret
+  echo "BOT_TOKEN=$telegram_token" > $INSTALL_DIR/.env
+  echo "MONGODB_URI=mongodb://localhost:27017" >> $INSTALL_DIR/.env
+  echo "DATABASE_NAME=chatbot_db" >> $INSTALL_DIR/.env
+  echo "ADMIN_ID=$admin_id" >> $INSTALL_DIR/.env
+fi
 
 # Aýdyňlaşdyryjy habar - awtomatiki işlemeýän ýagdaýda 
 if [ "$telegram_token" = "TOKEN_PLACEHOLDER" ] || [ "$admin_id" = "123456789" ]; then
