@@ -12,7 +12,56 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # Reňki nol et
+
+# Animasiýa üçin funksiýalar
+spin() {
+  local pid=$1
+  local delay=0.1
+  local spinstr='|/-\'
+  echo -n " "
+  while ps -p $pid > /dev/null; do
+    local temp=${spinstr#?}
+    printf "[%c]  " "$spinstr"
+    local spinstr=$temp${spinstr%"$temp"}
+    sleep $delay
+    printf "\b\b\b\b\b"
+  done
+  printf "    \b\b\b\b"
+}
+
+progress_bar() {
+  local title=$1
+  local pid=$2
+  local duration=$3
+  local bar_size=40
+  
+  echo -ne "${YELLOW}${title}${NC} ["
+  
+  local i=0
+  while ps -p $pid > /dev/null && [ $i -lt $bar_size ]; do
+    echo -ne "${GREEN}#${NC}"
+    sleep $(echo "$duration/$bar_size" | bc -l)
+    ((i++))
+  done
+  
+  # Dogry tamamlanýança galan bölegiň dolmagy
+  for ((j=i; j<$bar_size; j++)); do
+    if ps -p $pid > /dev/null; then
+      echo -ne "${GREEN}#${NC}"
+      sleep 0.01
+    else
+      echo -ne "${GREEN}#${NC}"
+      sleep 0.005
+    fi
+  done
+  
+  echo -e "] ${GREEN}Tamamlandy!${NC}"
+}
+
+# Ekrany arassala
+clear
 
 echo -e "${BLUE}"
 echo "   _____ _           _   ____        _   "
@@ -74,17 +123,58 @@ get_admin_id() {
 # Ulgam taýýarlamak
 setup_system() {
   echo -e "${YELLOW}Ulgam täzelenýär we zerur paketler gurnalyar...${NC}"
-  apt update > /dev/null 2>&1
-  apt install -y python3 python3-pip python3-venv git screen curl > /dev/null 2>&1
+  
+  # Animasiýaly ýükleme
+  apt update > /dev/null 2>&1 &
+  PID=$!
+  progress_bar "Ulgam maglumatlary täzelenýär" $PID 3
+  wait $PID
+  
+  # Zerur paketleri gurnamak
+  for package in python3 python3-pip python3-venv git screen curl wget; do
+    echo -ne "${YELLOW}Guralýar: ${CYAN}$package${NC} "
+    apt install -y $package > /dev/null 2>&1 &
+    PID=$!
+    spin $PID
+    wait $PID
+    echo -e " ${GREEN}✓${NC}"
+  done
   
   # MongoDB gurnalyşy
   echo -e "${YELLOW}MongoDB gurnalyar...${NC}"
-  wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add - > /dev/null 2>&1
-  echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list > /dev/null 2>&1
-  apt update > /dev/null 2>&1
-  apt install -y mongodb-org > /dev/null 2>&1
+  echo -ne "${YELLOW}MongoDB açar faýly alynýar${NC} "
+  wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add - > /dev/null 2>&1 &
+  PID=$!
+  spin $PID
+  wait $PID
+  echo -e " ${GREEN}✓${NC}"
+  
+  echo -ne "${YELLOW}MongoDB depo listi goşulýar${NC} "
+  echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list > /dev/null 2>&1 &
+  PID=$!
+  spin $PID
+  wait $PID
+  echo -e " ${GREEN}✓${NC}"
+  
+  apt update > /dev/null 2>&1 &
+  PID=$!
+  progress_bar "MongoDB paketleri täzelenýär" $PID 2
+  wait $PID
+  
+  echo -ne "${YELLOW}MongoDB gurnalyşy edilýär${NC} "
+  apt install -y mongodb-org > /dev/null 2>&1 &
+  PID=$!
+  progress_bar "MongoDB gurnalyşy" $PID 5
+  wait $PID
+  echo -e " ${GREEN}✓${NC}"
+  
+  echo -ne "${YELLOW}MongoDB hyzmaty işledilýär${NC} "
   systemctl enable mongod > /dev/null 2>&1
-  systemctl start mongod > /dev/null 2>&1
+  systemctl start mongod > /dev/null 2>&1 &
+  PID=$!
+  spin $PID
+  wait $PID
+  echo -e " ${GREEN}✓${NC}"
   
   echo -e "${GREEN}Ulgam taýýarlandy!${NC}"
 }
@@ -96,7 +186,12 @@ SERVICE_NAME="chatbot"
 # Öňki gurnalyş barlagy we arassalamak
 if [ -d "$INSTALL_DIR" ]; then
   echo -e "${YELLOW}Öňki gurnalyş tapyldy. Awtomatiki täzelenýär...${NC}"
-  rm -rf "$INSTALL_DIR"
+  echo -ne "${YELLOW}Öňki gurnalyş aýrylýar${NC} "
+  rm -rf "$INSTALL_DIR" &
+  PID=$!
+  spin $PID
+  wait $PID
+  echo -e " ${GREEN}✓${NC}"
 fi
 
 # Gerekli bolan maglumatlary almak
@@ -109,33 +204,55 @@ db_name="chatbot_db"
 setup_system
 
 # Gurnalyş katalogyny döret
-mkdir -p "$INSTALL_DIR"
+echo -ne "${YELLOW}Gurnalyş katalogy döredilýär${NC} "
+mkdir -p "$INSTALL_DIR" &
+PID=$!
+spin $PID
+wait $PID
+echo -e " ${GREEN}✓${NC}"
+
 cd "$INSTALL_DIR"
 
 # Bot kodlaryny ýükle
 echo -e "${YELLOW}Bot kodlary ýüklenýär...${NC}"
-git clone https://github.com/hackedcdn/chatbot.git . > /dev/null 2>&1
+git clone https://github.com/hackedcdn/chatbot.git . > /dev/null 2>&1 &
+PID=$!
+progress_bar "Bot kodlary ýüklenýär" $PID 3
+wait $PID
 
 # Wirtual gurşaw döret we baglylyky guramalary gurna
 echo -e "${YELLOW}Python wirtual gurşawy döredilýär...${NC}"
-python3 -m venv venv > /dev/null 2>&1
+python3 -m venv venv > /dev/null 2>&1 &
+PID=$!
+progress_bar "Wirtual gurşaw döredilýär" $PID 2
+wait $PID
+
 source venv/bin/activate
-pip install --upgrade pip > /dev/null 2>&1
-pip install -r requirements.txt > /dev/null 2>&1
+echo -ne "${YELLOW}Python paketleri täzelenýär${NC} "
+pip install --upgrade pip > /dev/null 2>&1 &
+PID=$!
+spin $PID
+wait $PID
+echo -e " ${GREEN}✓${NC}"
+
+echo -e "${YELLOW}Bot baglylyky guramalary gurnalyar...${NC}"
+pip install -r requirements.txt > /dev/null 2>&1 &
+PID=$!
+progress_bar "Python paketleri gurnalyar" $PID 5
+wait $PID
 
 # Konfigurasiýa faýlyny döret
-echo -e "${YELLOW}Konfigurasiýa faýly döredilýär...${NC}"
+echo -ne "${YELLOW}Konfigurasiýa faýly döredilýär${NC} "
 cat > .env << EOL
 BOT_TOKEN=$telegram_token
 MONGODB_URI=$mongodb_uri
 DATABASE_NAME=$db_name
 ADMIN_ID=$admin_id
 EOL
-  
-echo -e "${GREEN}Konfigurasiýa faýly üstünlikli döredildi${NC}"
+echo -e " ${GREEN}✓${NC}"
 
 # Hyzmat faýlyny döret
-echo -e "${YELLOW}Ulgam hyzmaty döredilýär...${NC}"
+echo -ne "${YELLOW}Ulgam hyzmaty döredilýär${NC} "
 cat > /etc/systemd/system/chatbot.service << EOL
 [Unit]
 Description=ChatBot Telegram Bot Service
@@ -155,17 +272,21 @@ SyslogIdentifier=chatbot
 [Install]
 WantedBy=multi-user.target
 EOL
+echo -e " ${GREEN}✓${NC}"
 
 # Dolandyryş paneli skripti
-echo -e "${YELLOW}Dolandyryş paneli skripti döredilýär...${NC}"
+echo -ne "${YELLOW}Dolandyryş paneli skripti döredilýär${NC} "
 cp -f panel.sh /usr/local/bin/chatbot > /dev/null 2>&1
 chmod +x /usr/local/bin/chatbot
+echo -e " ${GREEN}✓${NC}"
 
 # Symbolik baglanyşyk döret
+echo -ne "${YELLOW}Aňsat ulanmak üçin simwolik baglanyşyk döredilýär${NC} "
 ln -sf /usr/local/bin/chatbot /usr/bin/chatbot > /dev/null 2>&1
+echo -e " ${GREEN}✓${NC}"
 
 # Täzeleme skripti
-echo -e "${YELLOW}Täzeleme skripti döredilýär...${NC}"
+echo -ne "${YELLOW}Täzeleme skripti döredilýär${NC} "
 cat > "$INSTALL_DIR/update.sh" << EOL
 #!/bin/bash
 # ChatBot täzeleme skripti
@@ -173,24 +294,65 @@ cat > "$INSTALL_DIR/update.sh" << EOL
 
 curl -sSL https://raw.githubusercontent.com/hackedcdn/chatbot/main/update.sh | sudo bash
 EOL
-
 chmod +x "$INSTALL_DIR/update.sh"
+echo -e " ${GREEN}✓${NC}"
 
 # Hyzmaty başlat
 echo -e "${YELLOW}Hyzmat başladylýar...${NC}"
-systemctl daemon-reload
-systemctl enable chatbot.service > /dev/null 2>&1
-systemctl start chatbot.service
+systemctl daemon-reload &
+PID=$!
+spin $PID
+wait $PID
 
-echo -e "${GREEN}------------------------------------------------------------${NC}"
-echo -e "${GREEN}ChatBot üstünlikli guruldy!${NC}"
-echo -e "${GREEN}Boty dolandyrmak üçin diňe ${YELLOW}chatbot${GREEN} diýip ýazyň${NC}"
-echo -e "${GREEN}Bot şu wagt işleýär we ulanmaga taýýar.${NC}"
-echo -e "${GREEN}Telegram-da özüňiziň botňyzy açyp, /start buýrugy iberiň.${NC}"
-echo -e "${GREEN}------------------------------------------------------------${NC}"
-echo -e "${GREEN}Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)${NC}"
+systemctl enable chatbot.service > /dev/null 2>&1 &
+PID=$!
+spin $PID 
+wait $PID
+
+systemctl start chatbot.service &
+PID=$!
+progress_bar "Bot hyzmaty başladylýar" $PID 3
+wait $PID
+
+echo -e ""
+echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║         ChatBot üstünlikli guruldy!            ║${NC}"
+echo -e "${GREEN}║                                                ║${NC}"
+echo -e "${GREEN}║  Boty dolandyrmak üçin diňe ${YELLOW}chatbot${GREEN} diýip ýazyň  ║${NC}"
+echo -e "${GREEN}║  Bot şu wagt işleýär we ulanmaga taýýar.      ║${NC}"
+echo -e "${GREEN}║  Telegram-da \"/start\" buýrugy bilen botňyzy      ║${NC}"
+echo -e "${GREEN}║  işlediň.                                      ║${NC}"
+echo -e "${GREEN}║                                                ║${NC}"
+echo -e "${GREEN}║  Dolandyryjy: hackedcdn                        ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════╝${NC}"
+
+# Biraz garaşmak üçin
+sleep 3
+
+# Aňsatlaşdyryjy habary görkez
+echo -e "\n${YELLOW}WAJYP MAGLUMAT:${NC}"
+echo -e "${CYAN}------------------------------${NC}"
+echo -e "${CYAN}Dolandyryş buýruklary:${NC}"
+echo -e "${GREEN}chatbot${NC} - Bot dolandyryş panelini açar"
+echo -e "${GREEN}sudo su -c \"systemctl restart chatbot\"${NC} - Boty täzeden başlatmak"
+echo -e "${GREEN}sudo su -c \"systemctl stop chatbot\"${NC} - Boty durdurmak"
+echo -e "${GREEN}sudo su -c \"systemctl start chatbot\"${NC} - Boty başlatmak"
+echo -e "${CYAN}------------------------------${NC}"
+echo -e "${YELLOW}Häzir dolandyryş paneli 5 sekuntdan soň açylar...${NC}"
+
+# 5 sekuntlap garaş we sekuntlary görkezilýär
+for i in {5..1}; do
+  echo -ne "${YELLOW}$i...${NC}\r"
+  sleep 1
+done
 
 # Dolandyryş panelini awtomatiki aç
 echo -e "${YELLOW}Dolandyryş paneli açylýar...${NC}"
+sleep 1
+
+echo -e "${GREEN}---------------------------------------------------------${NC}"
+echo -e "${GREEN}DOLANDYRYŞ PANELI AÇYLÝAR, AZ GARAŞYŇ...${NC}"
+echo -e "${GREEN}---------------------------------------------------------${NC}"
 sleep 2
+
 /usr/bin/chatbot 

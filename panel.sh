@@ -6,7 +6,7 @@
 # Reňk kesgitlemeleri
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
@@ -15,11 +15,57 @@ NC='\033[0m' # No Color
 INSTALL_DIR="/opt/chatbot"
 SERVICE_NAME="chatbot"
 
+# Animasiýa üçin funksiýalar
+spin() {
+  local pid=$1
+  local delay=0.1
+  local spinstr='|/-\'
+  echo -n " "
+  while ps -p $pid > /dev/null; do
+    local temp=${spinstr#?}
+    printf "[%c]  " "$spinstr"
+    local spinstr=$temp${spinstr%"$temp"}
+    sleep $delay
+    printf "\b\b\b\b\b"
+  done
+  printf "    \b\b\b\b"
+}
+
+progress_bar() {
+  local title=$1
+  local pid=$2
+  local duration=$3
+  local bar_size=40
+  
+  echo -ne "${YELLOW}${title}${NC} ["
+  
+  local i=0
+  while ps -p $pid > /dev/null && [ $i -lt $bar_size ]; do
+    echo -ne "${GREEN}#${NC}"
+    sleep $(echo "$duration/$bar_size" | bc -l)
+    ((i++))
+  done
+  
+  # Dogry tamamlanýança galan bölegiň dolmagy
+  for ((j=i; j<$bar_size; j++)); do
+    if ps -p $pid > /dev/null; then
+      echo -ne "${GREEN}#${NC}"
+      sleep 0.01
+    else
+      echo -ne "${GREEN}#${NC}"
+      sleep 0.005
+    fi
+  done
+  
+  echo -e "] ${GREEN}Tamamlandy!${NC}"
+}
+
 # Root barlagy
-if [ "$(id -u)" != "0" ]; then
-    echo -e "${RED}Bu amal üçin root ygtyýarlary gerek. Awtomatiki roota geçiljek...${NC}"
-    sudo $0 "$@"
-    exit $?
+if [ "$EUID" -ne 0 ]; then
+  clear
+  echo -e "${RED}Näsazlyk: Bu skripti root hökmünde işlediň!${NC}"
+  echo -e "${YELLOW}Buýruk: sudo chatbot${NC}"
+  exit 1
 fi
 
 # Ekrany arassala
@@ -48,31 +94,72 @@ check_status() {
 }
 
 start_bot() {
-    echo -e "${BLUE}Bot başladylýar...${NC}"
-    systemctl start $SERVICE_NAME
-    sleep 2
-    check_status
+    echo -ne "${YELLOW}Bot hyzmaty başladylýar...${NC} "
+    systemctl start $SERVICE_NAME > /dev/null 2>&1 &
+    PID=$!
+    progress_bar "Bot işledilýär" $PID 2
+    wait $PID
+    
+    if systemctl is-active --quiet $SERVICE_NAME; then
+        echo -e "${GREEN}Bot üstünlikli işledildi!${NC}"
+    else
+        echo -e "${RED}Boty işletmek bolmady. Loglar üçin journalctl -u $SERVICE_NAME ulanyň${NC}"
+    fi
 }
 
 stop_bot() {
-    echo -e "${BLUE}Bot durdurylýar...${NC}"
-    systemctl stop $SERVICE_NAME
-    sleep 2
-    check_status
+    echo -ne "${YELLOW}Bot hyzmaty durdurylýar...${NC} "
+    systemctl stop $SERVICE_NAME > /dev/null 2>&1 &
+    PID=$!
+    spin $PID
+    wait $PID
+    
+    if ! systemctl is-active --quiet $SERVICE_NAME; then
+        echo -e " ${GREEN}Bot üstünlikli durduryldy!${NC}"
+    else
+        echo -e " ${RED}Boty durdurmak bolmady. Loglar üçin journalctl -u $SERVICE_NAME ulanyň${NC}"
+    fi
 }
 
 restart_bot() {
-    echo -e "${BLUE}Bot täzeden başladylýar...${NC}"
-    systemctl restart $SERVICE_NAME
-    sleep 2
-    check_status
+    echo -ne "${YELLOW}Bot hyzmaty täzeden başladylýar...${NC} "
+    systemctl restart $SERVICE_NAME > /dev/null 2>&1 &
+    PID=$!
+    progress_bar "Bot täzeden işledilýär" $PID 3
+    wait $PID
+    
+    if systemctl is-active --quiet $SERVICE_NAME; then
+        echo -e "${GREEN}Bot üstünlikli täzeden başladyldy!${NC}"
+    else
+        echo -e "${RED}Boty täzeden başladyp bolmady. Loglar üçin journalctl -u $SERVICE_NAME ulanyň${NC}"
+    fi
 }
 
 update_bot() {
-    echo -e "${BLUE}Bot täzelenýär...${NC}"
-    curl -sSL https://raw.githubusercontent.com/hackedcdn/chatbot/main/update.sh | sudo bash
-    echo -e "\n${BLUE}Dowam etmek üçin Enter düwmesine basyň...${NC}"
-    read
+    echo -e "${YELLOW}Bot täzelenýär...${NC}"
+    echo -e "${YELLOW}Täzeleme skripti başladylýar, bu biraz wagt alyp biler...${NC}"
+    
+    # Animasiýaly täzeleme başlangyç
+    echo -ne "${YELLOW}Täzeleme skripti ýüklenýär${NC} "
+    for i in {1..20}; do
+        echo -ne "${GREEN}>${NC}"
+        sleep 0.05
+    done
+    echo -e " ${GREEN}✓${NC}"
+    
+    # Aýdyňlaşdyryjy habary görkez, soňra 3 sekunt sakla
+    echo -e "${YELLOW}Täzeleme skripti işledilýär. Bu ekran ýapylandan soň täzeleme skripti açylar.${NC}"
+    echo -e "${YELLOW}Täzeleme tamamlanandan soň, dolandyryş paneli täzeden açylar.${NC}"
+    for i in {3..1}; do
+        echo -ne "${YELLOW}$i sekunt galdyramsoň täzeleme başlar...${NC}\r"
+        sleep 1
+    done
+    echo -e "${GREEN}Täzeleme başlanýar!${NC}"
+    sleep 1
+    
+    # Täzeleme skriptini işlet
+    bash -c "curl -sSL https://raw.githubusercontent.com/hackedcdn/chatbot/main/update.sh | sudo bash && sudo chatbot"
+    exit 0
 }
 
 view_logs() {
@@ -154,55 +241,111 @@ uninstall_bot() {
     read
 }
 
+# Menu funksiýasy
+show_menu() {
+  clear
+  echo -e "${BLUE}"
+  echo -e "   _____ _           _   ____        _   "
+  echo -e "  / ____| |         | | |  _ \      | |  "
+  echo -e " | |    | |__   __ _| |_| |_) | ___ | |_ "
+  echo -e " | |    | '_ \ / _\` | __|  _ < / _ \| __|"
+  echo -e " | |____| | | | (_| | |_| |_) | (_) | |_ "
+  echo -e "  \_____|_| |_|\__,_|\__|____/ \___/ \__|"
+  echo -e "${NC}"
+  echo -e "${GREEN}ChatBot Dolandyryş Paneli${NC}"
+  echo -e "${GREEN}Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)${NC}"
+  echo -e "----------------------------------------"
+  
+  # Ýagdaýlary görkez
+  if systemctl is-active --quiet $SERVICE_NAME; then
+    echo -e "${GREEN}Bot ýagdaýy: Işleýär ✓${NC}"
+  else
+    echo -e "${RED}Bot ýagdaýy: Duruzdyrylan ✗${NC}"
+  fi
+  
+  if systemctl is-active --quiet mongod; then
+    echo -e "${GREEN}MongoDB ýagdaýy: Işleýär ✓${NC}"
+  else
+    echo -e "${RED}MongoDB ýagdaýy: Duruzdyrylan ✗${NC}"
+  fi
+  
+  # Wersiýa maglumaty
+  if [ -f "$INSTALL_DIR/version.txt" ]; then
+    VERSION=$(cat $INSTALL_DIR/version.txt)
+    echo -e "${GREEN}Wersiýa: ${CYAN}$VERSION${NC}"
+  else
+    echo -e "${YELLOW}Wersiýa: Näbelli${NC}"
+  fi
+  
+  echo -e "----------------------------------------"
+  echo -e "${YELLOW}Saýlanyň:${NC}"
+  echo -e "${GREEN}1)${NC} Boty başlat"
+  echo -e "${GREEN}2)${NC} Boty durdur"
+  echo -e "${GREEN}3)${NC} Boty täzeden başlat"
+  echo -e "${GREEN}4)${NC} Bot loglaryny görkez"
+  echo -e "${GREEN}5)${NC} Bot statusyny görkez"
+  echo -e "${GREEN}6)${NC} Täzeleme"
+  echo -e "${GREEN}7)${NC} Konfigurasiýany redaktirle"
+  echo -e "${GREEN}8)${NC} Ulgam statusyny görkez"
+  echo -e "${GREEN}9)${NC} Boty aýyr"
+  echo -e "${GREEN}0)${NC} Çykyş"
+  echo -e "----------------------------------------"
+  echo -e "${CYAN}Panel özbaşdak ýapylmaz. Çykmak üçin diňe [0] basyň!${NC}"
+  echo -ne "${CYAN}Saýlaňyzyň belgisini giriziň [0-9]: ${NC}"
+}
+
 # Esasy menýu döwri
 while true; do
-    clear
-    echo -e "${BLUE}"
-    echo "   _____ _           _   ____        _   "
-    echo "  / ____| |         | | |  _ \      | |  "
-    echo " | |    | |__   __ _| |_| |_) | ___ | |_ "
-    echo " | |    | '_ \ / _\` | __|  _ < / _ \| __|"
-    echo " | |____| | | | (_| | |_| |_) | (_) | |_ "
-    echo "  \_____|_| |_|\__,_|\__|____/ \___/ \__|"
-    echo -e "${NC}"
-    echo -e "${YELLOW}ChatBot Dolandyryş Paneli${NC}"
-    echo -e "${GREEN}Dolandyryjy: hackedcdn (https://github.com/hackedcdn/chatbot)${NC}"
-    echo ""
-    
-    # Bot ýagdaýy
-    echo -n "Ýagdaý: "
-    check_status
-    
-    # Wersiýa maglumaty
-    if [ -f "$INSTALL_DIR/version.txt" ]; then
-        VERSION=$(cat $INSTALL_DIR/version.txt)
-        echo -e "Wersiýa: ${CYAN}$VERSION${NC}"
-    else
-        echo -e "Wersiýa: ${CYAN}Näbelli${NC}"
-    fi
-    
-    echo ""
-    echo -e "${YELLOW}Haýyş, bir amal saýlaň:${NC}"
-    echo -e "${CYAN}1)${NC} Boty Başlat"
-    echo -e "${CYAN}2)${NC} Boty Durdur"
-    echo -e "${CYAN}3)${NC} Boty Täzeden Başlat"
-    echo -e "${CYAN}4)${NC} Bot Täzelemelerini Barla"
-    echo -e "${CYAN}5)${NC} Bot Loglaryny Görkez"
-    echo -e "${CYAN}6)${NC} Bot Konfigurasiýasyny Redaktirle"
-    echo -e "${CYAN}7)${NC} Boty Aýyr"
-    echo -e "${CYAN}0)${NC} Çykyş"
-    echo ""
-    read -p "Saýlawyňyz [0-7] (awtomatiki çykmak üçin 10 sekunt): " -t 10 choice
+    show_menu
+    read -r choice
     
     case $choice in
-        1) start_bot ;;
-        2) stop_bot ;;
-        3) restart_bot ;;
-        4) update_bot ;;
-        5) view_logs ;;
-        6) edit_config ;;
-        7) uninstall_bot ;;
-        0|"") clear; exit 0 ;;
-        *) echo -e "${RED}Nädogry saýlaw!${NC}"; sleep 2 ;;
+        1)
+            start_bot
+            ;;
+        2)
+            stop_bot
+            ;;
+        3)
+            restart_bot
+            ;;
+        4)
+            view_logs
+            ;;
+        5)
+            show_status
+            ;;
+        6)
+            update_bot
+            ;;
+        7)
+            edit_config
+            ;;
+        8)
+            system_status
+            ;;
+        9)
+            uninstall_bot
+            ;;
+        0)
+            clear
+            echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
+            echo -e "${GREEN}║      ChatBot dolandyryş panelinden çykylýar    ║${NC}"
+            echo -e "${GREEN}║                                                ║${NC}"
+            echo -e "${GREEN}║  Ýene girmek üçin diňe ${YELLOW}chatbot${GREEN} diýip ýazyň   ║${NC}"
+            echo -e "${GREEN}║                                                ║${NC}"
+            echo -e "${GREEN}║  Dolandyryjy: hackedcdn                        ║${NC}"
+            echo -e "${GREEN}╚════════════════════════════════════════════════╝${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Ýalňyş saýlaw. Täzeden synanyşyň.${NC}"
+            sleep 1
+            ;;
     esac
+    
+    # Esasy menýuwa gaýtmazdan öň, dowam etmek üçin "Enter" talapy
+    echo
+    echo -ne "${YELLOW}Esasy menýuwa gaýtmak üçin Enter basyň...${NC}"
+    read dummy
 done 
