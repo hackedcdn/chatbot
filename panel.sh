@@ -263,84 +263,118 @@ fix_env_file() {
   CONFIG_FILE="$INSTALL_DIR/.env"
   
   echo -e "${YELLOW}Konfigurasiýa faýly näsazlygy düzedilýär...${NC}"
-  echo -e "${RED}Görünşine görä, .env faýly bozulan bolup biler.${NC}"
-  echo -e "${YELLOW}Faýl täzeden döredilýär...${NC}"
   
-  # Bar bolan .env faýlyny ätiýaçla
+  # Öňki .env faýlyny ätiýaçla
   if [ -f "$CONFIG_FILE" ]; then
-    echo -ne "${YELLOW}Bar bolan .env faýly ätiýaçlanýar...${NC} "
-    cp $CONFIG_FILE ${CONFIG_FILE}.backup.$(date +%Y%m%d%H%M%S) &
-    PID=$!
-    spin $PID
-    wait $PID
-    echo -e " ${GREEN}✓${NC}"
+    cp -f "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+    echo -e "${GREEN}Öňki .env faýlynyň ätiýaçlyk nusgasy döredildi.${NC}"
   fi
   
-  # Ulanyjydan täze konfigurasiýa üçin maglumatlary soramak
-  echo -e "${YELLOW}Täze konfigurasiýa üçin gerekli maglumatlary giriziň:${NC}"
+  # Ýagdaýda variable bahalaryny alyp biler
+  BOT_TOKEN=""
+  ADMIN_ID=""
+  
+  # Öňki .env faýlyny barla
+  if [ -f "$CONFIG_FILE" ]; then
+    # Variable bahalaryny alyp bileris
+    BOT_TOKEN=$(grep -i "BOT_TOKEN" "$CONFIG_FILE" | sed 's/BOT_TOKEN=//g' | tr -d ' "'\''$' || echo "")
+    MONGODB_URI=$(grep -i "MONGO.*URI" "$CONFIG_FILE" | sed 's/.*URI=//g' | tr -d ' "'\''$' || echo "mongodb://localhost:27017")
+    DB_NAME=$(grep -i "DATABASE_NAME" "$CONFIG_FILE" | sed 's/.*NAME=//g' | tr -d ' "'\''$' || echo "chatbot_db")
+    ADMIN_ID=$(grep -i "ADMIN_ID" "$CONFIG_FILE" | sed 's/ADMIN_ID=//g' | tr -d ' "'\''$' || echo "")
+    
+    # Çykaryş görkez
+    echo -e "${YELLOW}Öňki konfigurasiýa:${NC}"
+    echo -e "Bot Token: ${CYAN}$BOT_TOKEN${NC}"
+    echo -e "MongoDB URI: ${CYAN}$MONGODB_URI${NC}"
+    echo -e "DB Ady: ${CYAN}$DB_NAME${NC}"
+    echo -e "Admin ID: ${CYAN}$ADMIN_ID${NC}"
+    echo
+  fi
+  
+  # Ulanyjydan täze maglumatlary almak ýa-da öňkülerini saklamak
+  echo -e "${YELLOW}Täze konfigurasiýa maglumatlary (boş goýsaňyz, öňküsi ulanyljakdyr):${NC}"
   
   # Bot Token
-  read -p "Telegram Bot Token (boş goýsaňyz, TOKEN_PLACEHOLDER ulanyljakdyr): " BOT_TOKEN
-  if [ -z "$BOT_TOKEN" ]; then
-    BOT_TOKEN="TOKEN_PLACEHOLDER"
-  fi
-  
-  # MongoDB URI
-  read -p "MongoDB URI (boş goýsaňyz, 'mongodb://localhost:27017' ulanyljakdyr): " MONGODB_URI
-  if [ -z "$MONGODB_URI" ]; then
-    MONGODB_URI="mongodb://localhost:27017"
-  fi
-  
-  # Database ady
-  read -p "MongoDB maglumat bazasynyň ady (boş goýsaňyz, 'chatbot_db' ulanyljakdyr): " DB_NAME
-  if [ -z "$DB_NAME" ]; then
-    DB_NAME="chatbot_db"
+  echo -ne "${GREEN}Bot Token${NC} [Häzirki: $BOT_TOKEN]: "
+  read NEW_TOKEN
+  if [ -z "$NEW_TOKEN" ]; then
+    if [ -z "$BOT_TOKEN" ]; then
+      echo -ne "${YELLOW}Bot tokeni boş. Dogry tokeni ýazyň:${NC} "
+      read NEW_TOKEN
+      if [ -z "$NEW_TOKEN" ]; then
+        NEW_TOKEN="TOKEN_PLACEHOLDER"
+        echo -e "${RED}Token girizilmedi. TOKEN_PLACEHOLDER ulanylýar, bot işlemez!${NC}"
+      fi
+    else
+      NEW_TOKEN="$BOT_TOKEN"
+    fi
   fi
   
   # Admin ID
-  read -p "Telegram Admin ID (boş goýsaňyz, '123456789' ulanyljakdyr): " ADMIN_ID
-  if [ -z "$ADMIN_ID" ]; then
-    ADMIN_ID="123456789"
+  echo -ne "${GREEN}Admin ID${NC} [Häzirki: $ADMIN_ID]: "
+  read NEW_ADMIN
+  if [ -z "$NEW_ADMIN" ]; then
+    if [ -z "$ADMIN_ID" ]; then
+      echo -ne "${YELLOW}Admin ID boş. Dogry Admin ID ýazyň:${NC} "
+      read NEW_ADMIN
+      if [ -z "$NEW_ADMIN" ]; then
+        NEW_ADMIN="123456789"
+        echo -e "${RED}Admin ID girizilmedi. 123456789 ulanylýar.${NC}"
+      fi
+    else
+      NEW_ADMIN="$ADMIN_ID"
+    fi
   fi
   
-  # Täze .env faýlyny döret
-  echo -ne "${YELLOW}Täze konfigurasiýa faýly döredilýär...${NC} "
-  cat > $CONFIG_FILE << EOL
-BOT_TOKEN=$BOT_TOKEN
-MONGODB_URI=$MONGODB_URI
-DATABASE_NAME=$DB_NAME
-ADMIN_ID=$ADMIN_ID
-EOL
-  echo -e " ${GREEN}✓${NC}"
+  # Admin ID-niň sanlygyny barla
+  if ! [[ "$NEW_ADMIN" =~ ^[0-9]+$ ]]; then
+    echo -e "${RED}Girilen Admin ID sanda däl! Standart 123456789 ulanyljakdyr.${NC}"
+    NEW_ADMIN="123456789"
+  fi
   
-  # Bot hyzmaty täzeden başlat
-  echo -e "${YELLOW}Bot hyzmaty täzeden başladylýar...${NC}"
-  restart_bot
+  # Täze .env faýlyny dogry formatda döret
+  echo "BOT_TOKEN=$NEW_TOKEN" > "$CONFIG_FILE"
+  echo "MONGODB_URI=$MONGODB_URI" >> "$CONFIG_FILE"
+  echo "DATABASE_NAME=$DB_NAME" >> "$CONFIG_FILE"
+  echo "ADMIN_ID=$NEW_ADMIN" >> "$CONFIG_FILE"
   
-  echo -e "${GREEN}Konfigurasiýa faýly üstünlikli düzedildi!${NC}"
+  chmod 644 "$CONFIG_FILE"
   
-  # Bot kodunu düzeltme - eğer dosya varsa format hatalarına karşı bot kodunu da güncelleyelim
+  echo -e "${GREEN}Täze konfigurasiýa faýly döredildi:${NC}"
+  cat "$CONFIG_FILE"
+  
+  # Bot.py faýlyna täze howpsuzlyk düzedişleri goş
   if [ -f "$INSTALL_DIR/bot.py" ]; then
-    echo -e "${YELLOW}Bot kodlary düzedilýär...${NC}"
+    echo -e "${YELLOW}Bot koduna howpsuzlyk düzedişleri goşulýar...${NC}"
+    cp -f "$INSTALL_DIR/bot.py" "$INSTALL_DIR/bot.py.backup" 2>/dev/null || true
     
-    # Koddaki env dosyası yükleme parçasını daha güvenli bir versiyonla değiştir
-    if grep -q "load_dotenv()" "$INSTALL_DIR/bot.py"; then
-      # Yedek al
-      cp -f "$INSTALL_DIR/bot.py" "$INSTALL_DIR/bot.py.bak" 2>/dev/null || true
-      
-      # Daha güvenli .env yükleme kodu ekle
-      sed -i 's/load_dotenv()/try:\n    load_dotenv()\nexcept Exception:\n    try:\n        load_dotenv(".env.test")\n    except Exception:\n        pass/' "$INSTALL_DIR/bot.py" 2>/dev/null || true
-      
-      # ADMIN_ID dönüşüm hatasını önlemek için güvenli kod ekle
-      sed -i 's/ADMIN_ID = int(os.getenv("ADMIN_ID", 0))/try:\n    admin_id_str = os.getenv("ADMIN_ID", "0").strip()\n    ADMIN_ID = int(admin_id_str) if admin_id_str else 0\nexcept ValueError:\n    ADMIN_ID = 0/' "$INSTALL_DIR/bot.py" 2>/dev/null || true
-    fi
+    # ADMIN_ID konwersiýasy üçin howpsuzlyk kody goş
+    sed -i '/ADMIN_ID = int(os.getenv("ADMIN_ID", 0))/c\try:\n    admin_id_str = os.getenv("ADMIN_ID", "0")\n    admin_id_str = admin_id_str.strip() if isinstance(admin_id_str, str) else "0"\n    ADMIN_ID = int(admin_id_str) if admin_id_str.isdigit() else 0\nexcept Exception:\n    ADMIN_ID = 0' "$INSTALL_DIR/bot.py" 2>/dev/null || true
     
-    # Bir de ".env.test" yedek dosyası oluştur
-    echo "BOT_TOKEN=$BOT_TOKEN" > "$INSTALL_DIR/.env.test"
-    echo "MONGODB_URI=$MONGODB_URI" >> "$INSTALL_DIR/.env.test"
-    echo "DATABASE_NAME=$DB_NAME" >> "$INSTALL_DIR/.env.test"
-    echo "ADMIN_ID=$ADMIN_ID" >> "$INSTALL_DIR/.env.test"
-    chmod 644 "$INSTALL_DIR/.env.test" 2>/dev/null || true
+    # load_dotenv() işini has howpsuz et
+    sed -i '/load_dotenv/c\try:\n    load_dotenv()\nexcept Exception:\n    try:\n        load_dotenv(".env.test")\n    except Exception as e:\n        print(f"Konfigurasiýa ýüklenip bilmedi: {str(e)}")' "$INSTALL_DIR/bot.py" 2>/dev/null || true
+    
+    echo -e "${GREEN}Bot kody üstünlikli düzedildi✓${NC}"
+  fi
+  
+  # Ätiýaçlyk .env.test faýlyny hem döret
+  echo "BOT_TOKEN=$NEW_TOKEN" > "$INSTALL_DIR/.env.test"
+  echo "MONGODB_URI=$MONGODB_URI" >> "$INSTALL_DIR/.env.test"
+  echo "DATABASE_NAME=$DB_NAME" >> "$INSTALL_DIR/.env.test"
+  echo "ADMIN_ID=$NEW_ADMIN" >> "$INSTALL_DIR/.env.test"
+  chmod 644 "$INSTALL_DIR/.env.test"
+  
+  # Bot hyzmatyny täzeden başlat
+  echo -e "${YELLOW}Bot hyzmaty täzeden başladylýar...${NC}"
+  systemctl restart $SERVICE_NAME
+  sleep 3
+  
+  # Bot işleýärmi barla
+  if systemctl is-active --quiet $SERVICE_NAME; then
+    echo -e "${GREEN}Bot hyzmaty üstünlikli işleýär✓${NC}"
+  else
+    echo -e "${RED}Bot hyzmaty işläp başlamady! Log ýazgylaryny barlaň:${NC}"
+    journalctl -u $SERVICE_NAME -n 10 --no-pager
   fi
 }
 
