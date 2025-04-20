@@ -7,6 +7,13 @@
 # curl -sSL https://raw.githubusercontent.com/hackedcdn/chatbot/main/install.sh | sudo bash
 # ======================================
 
+# WAJYP: curl | bash ulanyp bilinmeze ýa-da meseleler bolsa, iki basamakda işlediň:
+# wget https://raw.githubusercontent.com/hackedcdn/chatbot/main/install.sh
+# sudo bash install.sh
+
+# WAJYP: Bu skript curl | bash bilen işleýär, emma token we ID girşi üçin
+# terminaldan direktliwy okamalydyr. Eger mesele bolsa, ilki skripti ýükläp, soňra işlediň.
+
 # Reňk kesgitlemeleri
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -88,7 +95,7 @@ fi
 echo -e "${GREEN}GÖRKEZME: Gurnalyş awtomatiki däl, interaktiw režimde işleýär.${NC}"
 echo -e "${GREEN}Bot tokeni we Admin ID hökmany gerekdir, olary BOTFATHER-den we MYIDBOT-dan alyp bolýar.${NC}"
 echo -e "${GREEN}Gurnalyşy başlatmak üçin ENTER düwmesine basyň...${NC}"
-read -p ""  # Bu ýerde timeout aýyrmaly, ulanyjydan dogry jogap alýança garaşmaly
+read -r </dev/tty  # Bu ýerde timeout aýyrmaly, ulanyjydan dogry jogap alýança garaşmaly
 
 # Ulgamyň taýýarlygyny gözden geçirmek
 echo -e "${YELLOW}Ulgam taýýarlanýar, biraz garaşyň...${NC}"
@@ -111,10 +118,9 @@ get_telegram_token() {
   echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
   echo -e "${RED}==================================================${NC}"
   
-  # Dogry token formatyny duýjak bolýança garaş
-  # WAJYP: Ulanyjy girişini echo-lamaň, ýogsa başga outputlary ýalyşyrys
+  # WAJYP: Bu ýerdäki çözgüdi /dev/tty - terminaly dogrudan ulanyş
   echo -n "TOKEN: " 
-  read MY_TOKEN
+  read MY_TOKEN </dev/tty
   
   # Boş token ýa-da nädogry formaty kabul etme
   while true; do
@@ -123,7 +129,7 @@ get_telegram_token() {
     else
       echo -e "${RED}Nädogry token formaty. 'xxxxxx:yyyyyy' görnüşinde bolmaly.${NC}"
       echo -n "TOKEN: " 
-      read MY_TOKEN
+      read MY_TOKEN </dev/tty
     fi
   done
   
@@ -147,10 +153,9 @@ get_admin_id() {
   echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
   echo -e "${RED}==================================================${NC}"
   
-  # Dogry admin ID formatyny duýjak bolýança garaş
-  # WAJYP: Ulanyjy girişini echo-lamaň, ýogsa başga outputlary ýalyşyrys
+  # WAJYP: Bu ýerdäki çözgüdi /dev/tty - terminaly dogrudan ulanyş
   echo -n "ADMIN ID: " 
-  read MY_ADMIN_ID
+  read MY_ADMIN_ID </dev/tty
   
   # Boş admin ID ýa-da nädogry formaty kabul etme
   while true; do
@@ -159,7 +164,7 @@ get_admin_id() {
     else
       echo -e "${RED}Nädogry ID formaty. Diňe sanlardan ybarat bolmaly.${NC}"
       echo -n "ADMIN ID: " 
-      read MY_ADMIN_ID
+      read MY_ADMIN_ID </dev/tty
     fi
   done
   
@@ -495,7 +500,7 @@ echo -e "${YELLOW}MongoDB URI:${NC} $mongodb_uri"
 echo -e "${YELLOW}Database:${NC} $db_name"
 echo -e "${YELLOW}==================================================${NC}"
 echo -e "${GREEN}Bu maglumatlar dogrymy? Dowam etmek üçin ENTER basyň...${NC}"
-read -r
+read -r </dev/tty
 
 # Gurnalyş üçin değişkenleri nizamla
 
