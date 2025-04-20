@@ -554,28 +554,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     # Uygulama oluştur
-    # Proxy değişkenlerini temizle
-    if "https_proxy" in os.environ:
-        del os.environ["https_proxy"]
-    if "http_proxy" in os.environ:
-        del os.environ["http_proxy"]
-    if "all_proxy" in os.environ:
-        del os.environ["all_proxy"]
-    if "HTTPS_PROXY" in os.environ:
-        del os.environ["HTTPS_PROXY"]
-    if "HTTP_PROXY" in os.environ:
-        del os.environ["HTTP_PROXY"]
-    if "ALL_PROXY" in os.environ:
-        del os.environ["ALL_PROXY"]
-        
-    # Tüm proxy olmadan doğrudan bağlantı kur
-    import httpx
-    # Telegram bot üçin düzgün ApplicationBuilder düzet
-    application = Application.builder().token(BOT_TOKEN).get_updates_request(
-        httpx.Request(proxy=None)
-    ).request(
-        httpx.Request(proxy=None)
-    ).build()
+    application = Application.builder().token(BOT_TOKEN).build()
 
     # Komut işleyicileri
     application.add_handler(CommandHandler("start", start_command))
