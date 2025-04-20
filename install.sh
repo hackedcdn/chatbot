@@ -96,22 +96,30 @@ echo -e "${YELLOW}Ulgam taýýarlanýar, biraz garaşyň...${NC}"
 # Parametrleri ýygnamak üçin funksiýa
 get_telegram_token() {
   local token=""
-  echo -e "${YELLOW}Telegram Bot Token alynýar...${NC}"
-  echo -e "${GREEN}1. https://t.me/BotFather açyň${NC}"
-  echo -e "${GREEN}2. /newbot buýrugy bilen täze bot dörediň${NC}"
-  echo -e "${GREEN}3. Bot adyny we ulanyjy adyny giriziň${NC}"
-  echo -e "${GREEN}4. BotFather-den gelen tokeni göçürip alyň${NC}"
-  echo -e "${RED}---------------------------------------------------------------------${NC}"
-  echo -e "${YELLOW}Botfather-den alnan tokeniňizi ýazyň${NC}"
-  echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
-  echo -e "${RED}---------------------------------------------------------------------${NC}"
-  read -e -p "Token: " token
+  local token_entered=false
   
-  # Ulanyjydan jogap alynýança garaş
-  while [[ -z "$token" || "$token" != *":"* ]]; do
-    echo -e "${RED}Nädogry format! Token umuman 'xxxxxxx:yyyyyyyyyyy' görnüşinde bolmaly.${NC}"
-    echo -e "${YELLOW}Dogry tokeni giriziň ýa-da ${RED}CTRL+C${YELLOW} düwmesine basyp çykyň:${NC}"
-    read -e -p "Token: " token
+  while [ "$token_entered" = false ]; do
+    clear
+    echo -e "${YELLOW}Telegram Bot Token alynýar...${NC}"
+    echo -e "${GREEN}1. https://t.me/BotFather açyň${NC}"
+    echo -e "${GREEN}2. /newbot buýrugy bilen täze bot dörediň${NC}"
+    echo -e "${GREEN}3. Bot adyny we ulanyjy adyny giriziň${NC}"
+    echo -e "${GREEN}4. BotFather-den gelen tokeni göçürip alyň${NC}"
+    echo -e "${RED}---------------------------------------------------------------------${NC}"
+    echo -e "${YELLOW}Botfather-den alnan tokeniňizi ýazyň${NC}"
+    echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
+    echo -e "${RED}---------------------------------------------------------------------${NC}"
+    
+    echo -n "Token: "
+    IFS= read -r token
+    
+    if [[ -n "$token" && "$token" == *":"* ]]; then
+      token_entered=true
+    else
+      echo -e "${RED}Nädogry format! Token umuman 'xxxxxxx:yyyyyyyyyyy' görnüşinde bolmaly.${NC}"
+      echo -e "${RED}5 sekuntdan soň täzeden synanyşyň...${NC}"
+      sleep 5
+    fi
   done
   
   echo "$token"
@@ -119,21 +127,29 @@ get_telegram_token() {
 
 get_admin_id() {
   local admin_id=""
-  echo -e "${YELLOW}Admin ID alynýar...${NC}"
-  echo -e "${GREEN}1. Öz Telegram hasabyňyzda https://t.me/myidbot açyň${NC}"
-  echo -e "${GREEN}2. /getid buýrugy iberiň${NC}"
-  echo -e "${GREEN}3. Bot berýän ID belgiňizi göçürip alyň${NC}"
-  echo -e "${RED}---------------------------------------------------------------------${NC}"
-  echo -e "${YELLOW}Öz Telegram ID belgiňizi ýazyň${NC}"
-  echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
-  echo -e "${RED}---------------------------------------------------------------------${NC}"
-  read -e -p "Admin ID: " admin_id
+  local id_entered=false
   
-  # Ulanyjydan jogap alynýança garaş
-  while [[ -z "$admin_id" || ! "$admin_id" =~ ^[0-9]+$ ]]; do
-    echo -e "${RED}Nädogry format! Admin ID diňe sanlardan ybarat bolmaly.${NC}"
-    echo -e "${YELLOW}Dogry ID giriziň ýa-da ${RED}CTRL+C${YELLOW} düwmesine basyp çykyň:${NC}"
-    read -e -p "Admin ID: " admin_id
+  while [ "$id_entered" = false ]; do
+    clear
+    echo -e "${YELLOW}Admin ID alynýar...${NC}"
+    echo -e "${GREEN}1. Öz Telegram hasabyňyzda https://t.me/myidbot açyň${NC}"
+    echo -e "${GREEN}2. /getid buýrugy iberiň${NC}"
+    echo -e "${GREEN}3. Bot berýän ID belgiňizi göçürip alyň${NC}"
+    echo -e "${RED}---------------------------------------------------------------------${NC}"
+    echo -e "${YELLOW}Öz Telegram ID belgiňizi ýazyň${NC}"
+    echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
+    echo -e "${RED}---------------------------------------------------------------------${NC}"
+    
+    echo -n "Admin ID: "
+    IFS= read -r admin_id
+    
+    if [[ -n "$admin_id" && "$admin_id" =~ ^[0-9]+$ ]]; then
+      id_entered=true
+    else
+      echo -e "${RED}Nädogry format! Admin ID diňe sanlardan ybarat bolmaly.${NC}"
+      echo -e "${RED}5 sekuntdan soň täzeden synanyşyň...${NC}"
+      sleep 5
+    fi
   done
   
   echo "$admin_id"
@@ -445,18 +461,36 @@ if [ -d "$INSTALL_DIR" ]; then
   echo -e " ${GREEN}✓${NC}"
 fi
 
-# Gerekli bolan maglumatlary almak
-telegram_token=$(get_telegram_token)
-admin_id=$(get_admin_id)
+# GURNALYŞ PROSESI BU ÝERDE BAŞLAÝAR
+clear
+echo -e "${YELLOW}TELEGRAM BOT GURNALYŞY BAŞLANÝAR${NC}"
+echo -e "${RED}===================================================${NC}"
+
+# Takyk maglumatlar toplany
+echo -e "${YELLOW}Bot tokeni we Admin ID-ni talap edilýär${NC}"
+echo -e "${GREEN}Giriş etmeklige taýýarlanyň...${NC}"
+sleep 2
+
+# Token we ID soralýar
+TOKEN=$(get_telegram_token)
+ADMIN_ID=$(get_admin_id)
 mongodb_uri="mongodb://localhost:27017"
 db_name="chatbot_db"
 
-# Aýdyň görkeziň, dogrulygyny tassyklatmak üçin
-echo -e "${GREEN}Girilen maglumatlar:${NC}"
-echo -e "${YELLOW}Bot Token:${NC} ${telegram_token}"
-echo -e "${YELLOW}Admin ID:${NC} ${admin_id}"
+# Tassyklamak üçin görkezmek
+clear
+echo -e "${GREEN}===== GIRILEN MAGLUMATLAR =====${NC}"
+echo -e "${YELLOW}Bot Token:${NC} ${TOKEN}"
+echo -e "${YELLOW}Admin ID:${NC} ${ADMIN_ID}"
+echo -e "${YELLOW}MongoDB URI:${NC} ${mongodb_uri}"
+echo -e "${YELLOW}Database:${NC} ${db_name}"
+echo -e "${RED}===================================================${NC}"
 echo -e "${GREEN}Bu maglumatlar dogrymy? Dowam etmek üçin ENTER basyň, ýogsa CTRL+C basyp ýatyryň.${NC}"
-read -p ""
+read -r
+
+# Gurnalyş üçin değişkenleri nizamla
+telegram_token="$TOKEN"
+admin_id="$ADMIN_ID"
 
 # Ulgamy taýýarlamak
 setup_system
