@@ -7,12 +7,24 @@
 # curl -sSL https://raw.githubusercontent.com/hackedcdn/chatbot/main/install.sh | sudo bash
 # ======================================
 
-# WAJYP: curl | bash ulanyp bilinmeze ýa-da meseleler bolsa, iki basamakda işlediň:
-# wget https://raw.githubusercontent.com/hackedcdn/chatbot/main/install.sh
-# sudo bash install.sh
+# OTOMATIK KURULUM ÜÇIN:
+# curl -sSL https://raw.githubusercontent.com/hackedcdn/chatbot/main/install.sh | sudo bash -s auto
 
-# WAJYP: Bu skript curl | bash bilen işleýär, emma token we ID girşi üçin
-# terminaldan direktliwy okamalydyr. Eger mesele bolsa, ilki skripti ýükläp, soňra işlediň.
+# WAJYP: Bu skript curl | bash bilen işleýär
+# "auto" parametresi bilen çagyrylanda otomatik token we ID soramadan gurnaýar
+# Soňra dolandyryş panelinden token we ID üýtgedip bolýar
+
+# İlk parametre auto ise otomatik kurulum yap
+AUTO_INSTALL=false
+if [ "$1" = "auto" ]; then
+  AUTO_INSTALL=true
+fi
+
+# Otomatik kurulum için token ve admin ID değerlerini belirle
+if [ "$AUTO_INSTALL" = true ]; then
+  DEFAULT_TOKEN="7118577358:AAEFSVlP1rSkheaA2zJAx-vj5Vgy7zx8UrM"
+  DEFAULT_ADMIN="5019858401"
+fi
 
 # Reňk kesgitlemeleri
 GREEN='\033[0;32m'
@@ -102,6 +114,12 @@ echo -e "${YELLOW}Ulgam taýýarlanýar, biraz garaşyň...${NC}"
 
 # Parametrleri ýygnamak üçin funksiýa
 get_telegram_token() {
+  # Otomatik kurulum modu ise, varsayılan değeri kullan
+  if [ "$AUTO_INSTALL" = true ]; then
+    echo "$DEFAULT_TOKEN"
+    return
+  fi
+
   # Ekrany arassala
   clear
   
@@ -138,6 +156,12 @@ get_telegram_token() {
 }
 
 get_admin_id() {
+  # Otomatik kurulum modu ise, varsayılan değeri kullan
+  if [ "$AUTO_INSTALL" = true ]; then
+    echo "$DEFAULT_ADMIN"
+    return
+  fi
+
   # Ekrany arassala
   clear
   
@@ -484,6 +508,17 @@ echo -e "${YELLOW}==================================================${NC}"
 echo -e "${GREEN}CHATBOT GURNALYŞY BAŞLANÝAR...${NC}"
 echo -e "${YELLOW}==================================================${NC}"
 
+if [ "$AUTO_INSTALL" = true ]; then
+  echo -e "${GREEN}Otomatik gurnalyş režimi saýlandy.${NC}"
+  echo -e "${YELLOW}Token we Admin ID sonra panelden düzedilmelidir.${NC}"
+  sleep 2
+else
+  echo -e "${GREEN}Interaktiw gurnalyş režimi saýlandy.${NC}"
+  echo -e "${GREEN}Bot tokeni we Admin ID hökmany gerekdir, olary BOTFATHER-den we MYIDBOT-dan alyp bolýar.${NC}"
+  echo -e "${GREEN}Gurnalyşy başlatmak üçin ENTER düwmesine basyň...${NC}"
+  read -r </dev/tty
+fi
+
 # Ilki bilen gerekli tokeleri al
 BOT_TOKEN=$(get_telegram_token)
 ADMIN_ID=$(get_admin_id)
@@ -499,8 +534,14 @@ echo -e "${YELLOW}Admin ID:${NC} $ADMIN_ID"
 echo -e "${YELLOW}MongoDB URI:${NC} $mongodb_uri"
 echo -e "${YELLOW}Database:${NC} $db_name"
 echo -e "${YELLOW}==================================================${NC}"
-echo -e "${GREEN}Bu maglumatlar dogrymy? Dowam etmek üçin ENTER basyň...${NC}"
-read -r </dev/tty
+
+if [ "$AUTO_INSTALL" = true ]; then
+  echo -e "${GREEN}Otomatik gurnalyş saýlandy. Token we Admin ID konfigurasiýasy soň panel ulanylýp üýtgedilip bilner.${NC}"
+  sleep 3
+else
+  echo -e "${GREEN}Bu maglumatlar dogrymy? Dowam etmek üçin ENTER basyň...${NC}"
+  read -r </dev/tty
+fi
 
 # Gurnalyş üçin değişkenleri nizamla
 
@@ -778,5 +819,22 @@ echo -e "${GREEN}---------------------------------------------------------${NC}"
 echo -e "${GREEN}DOLANDYRYŞ PANELI AÇYLÝAR, AZ GARAŞYŇ...${NC}"
 echo -e "${GREEN}---------------------------------------------------------${NC}"
 sleep 2
+
+# Kurulum tamamlandığında özel mesaj ekle
+if [ "$AUTO_INSTALL" = true ]; then
+  echo -e ""
+  echo -e "${RED}╔════════════════════════════════════════════════╗${NC}"
+  echo -e "${RED}║     DİKKAT: OTOMATİK KURULUM TAMAMLANDI      ║${NC}"
+  echo -e "${RED}║                                              ║${NC}"
+  echo -e "${RED}║  Bot şimdi varsayılan ayarlarla kuruldu      ║${NC}"
+  echo -e "${RED}║  Çalışması için TOKEN ve ADMIN ID girmeniz   ║${NC}"
+  echo -e "${RED}║  GEREKLİDİR!                                 ║${NC}"
+  echo -e "${RED}║                                              ║${NC}"
+  echo -e "${RED}║  Şimdi panel açılacak, '7) Token düzelt'     ║${NC}"
+  echo -e "${RED}║  seçeneğini seçerek ayarlarınızı yapın       ║${NC}"
+  echo -e "${RED}╚════════════════════════════════════════════════╝${NC}"
+  echo -e "${YELLOW}Panel 5 saniye içinde açılacak...${NC}"
+  sleep 5
+fi
 
 /usr/bin/chatbot 
