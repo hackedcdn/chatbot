@@ -384,6 +384,16 @@ autofix_common_issues() {
   (
     echo -e "${YELLOW}Awtomatiki näsazlyk düzediş başlaýar...${NC}"
   
+    # Bot.py faýlyny düzet - indentasiýa näsazlygyny çöz
+    if [ -f "$INSTALL_DIR/bot.py" ]; then
+      echo -e "${YELLOW}Bot.py faýlyndaky indentasiýa näsazlygy düzedilýär...${NC}"
+      # 26-njy setirdäki try: näsazlygyny düzet
+      sed -i '27s/^load_dotenv()/    load_dotenv()/' "$INSTALL_DIR/bot.py" 2>/dev/null || true
+      # 18-nji setirdäki try: näsazlygyny hem düzet (başga bir möhüm ýalňyşlyk)
+      sed -i '19s/^try:$/    from dotenv import load_dotenv/' "$INSTALL_DIR/bot.py" 2>/dev/null || true
+      echo -e "${GREEN}Bot.py faýlyndaky indentasiýa näsazlygy düzedildi ✓${NC}"
+    fi
+
     # MongoDB işleýşini barla we düzet
     if ! systemctl is-active --quiet mongod; then
       echo -e "${YELLOW}MongoDB işlemeýär, işledilýär...${NC}"
