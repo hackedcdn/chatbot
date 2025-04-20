@@ -1,6 +1,7 @@
-python-telegram-bot==20.6
-pymongo==4.5.0
-python-dotenv==1.0.0
+python-telegram-bot>=13.0,<14.0
+pymongo>=4.0.0
+python-dotenv>=0.19.0
 motor==3.3.1
 asyncio==3.4.3
-tzlocal==5.0.1 
+tzlocal==5.0.1
+requests>=2.26.0 

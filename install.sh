@@ -97,12 +97,19 @@ get_telegram_token() {
   echo -e "${GREEN}2. /newbot buýrugy bilen täze bot dörediň${NC}"
   echo -e "${GREEN}3. Bot adyny we ulanyjy adyny giriziň${NC}"
   echo -e "${GREEN}4. BotFather-den gelen tokeni göçürip alyň${NC}"
-  echo -e "${YELLOW}Botfather-den alnan tokeniňizi ýazyň (eger boş goýsaňyz, testiň üçin nädogry token ulanyljakdyr)${NC}"
-  read -p "Token (Enter düwmesine basyp geçip bilersiňiz): " token
-  if [ -z "$token" ]; then
-    token="TOKEN_PLACEHOLDER"
-    echo -e "${YELLOW}Nädogry token ulanylar. Täze bot döretmek isleseňiz soňra konfigurasiýany üýtgediň.${NC}"
-  fi
+  echo -e "${RED}---------------------------------------------------------------------${NC}"
+  echo -e "${YELLOW}Botfather-den alnan tokeniňizi ýazyň${NC}"
+  echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
+  echo -e "${RED}---------------------------------------------------------------------${NC}"
+  read -e -p "Token: " token
+  
+  # Boş ýa-da nädogry token barlagy
+  while [[ -z "$token" || "$token" != *":"* ]]; do
+    echo -e "${RED}Nädogry format! Token umuman 'xxxxxxx:yyyyyyyyyyy' görnüşinde bolmaly.${NC}"
+    echo -e "${YELLOW}Dogry tokeni giriziň ýa-da ${RED}CTRL+C${YELLOW} düwmesine basyp çykyň:${NC}"
+    read -e -p "Token: " token
+  done
+  
   echo "$token"
 }
 
@@ -111,12 +118,19 @@ get_admin_id() {
   echo -e "${GREEN}1. Öz Telegram hasabyňyzda https://t.me/myidbot açyň${NC}"
   echo -e "${GREEN}2. /getid buýrugy iberiň${NC}"
   echo -e "${GREEN}3. Bot berýän ID belgiňizi göçürip alyň${NC}"
-  echo -e "${YELLOW}Öz Telegram ID belgiňizi ýazyň (eger boş goýsaňyz, standart baha 123456789 ulanyljakdyr)${NC}"
-  read -p "Admin ID (Enter düwmesine basyp geçip bilersiňiz): " admin_id
-  if [ -z "$admin_id" ]; then
-    admin_id="123456789"
-    echo -e "${YELLOW}Standart ID ulanylar. Admin hukuklaryny peýdalanmak isleseňiz soňra konfigurasiýany üýtgediň.${NC}"
-  fi
+  echo -e "${RED}---------------------------------------------------------------------${NC}"
+  echo -e "${YELLOW}Öz Telegram ID belgiňizi ýazyň${NC}"
+  echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
+  echo -e "${RED}---------------------------------------------------------------------${NC}"
+  read -e -p "Admin ID: " admin_id
+  
+  # Diňe san barlagy
+  while [[ -z "$admin_id" || ! "$admin_id" =~ ^[0-9]+$ ]]; do
+    echo -e "${RED}Nädogry format! Admin ID diňe sanlardan ybarat bolmaly.${NC}"
+    echo -e "${YELLOW}Dogry ID giriziň ýa-da ${RED}CTRL+C${YELLOW} düwmesine basyp çykyň:${NC}"
+    read -e -p "Admin ID: " admin_id
+  done
+  
   echo "$admin_id"
 }
 
@@ -234,6 +248,157 @@ create_correct_env_file() {
   echo -e "${GREEN}Konfigurasiýa faýly düzgün döredildi✓${NC}"
 }
 
+# MongoDB gurnalyşy
+install_mongodb() {
+  echo -e "${YELLOW}MongoDB gurnalyşy başladylýar...${NC}"
+  
+  # MongoDB gurnalandygyny barla
+  if command -v mongod &> /dev/null; then
+    echo -e "${GREEN}MongoDB eýýäm gurnalandyr!${NC}"
+    
+    # MongoDB serweriniň işleýändigini barla
+    if systemctl is-active --quiet mongod || systemctl is-active --quiet mongodb; then
+      echo -e "${GREEN}MongoDB serweri işleýär.${NC}"
+      return 0
+    else
+      echo -e "${YELLOW}MongoDB serweri işlemeýär. Işledilýär...${NC}"
+      if systemctl start mongod 2>/dev/null || systemctl start mongodb 2>/dev/null; then
+        echo -e "${GREEN}MongoDB serweri üstünlikli işledildi!${NC}"
+        return 0
+      else
+        echo -e "${RED}MongoDB serwerini işledip bolmady. Täzeden gurnamaga synanyşylýar...${NC}"
+      fi
+    fi
+  fi
+  
+  echo -e "${YELLOW}MongoDB gurnalyar...${NC}"
+  
+  # Ulgam görnüşini anykla
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_TYPE=$ID
+  else
+    OS_TYPE="unknown"
+  fi
+  
+  case $OS_TYPE in
+    ubuntu|debian)
+      # MongoDB açar faýlyny al
+      echo -ne "${YELLOW}MongoDB açar faýly alynýar...${NC} "
+      wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add - > /dev/null 2>&1 || true
+      echo -e " ${GREEN}✓${NC}"
+      
+      # MongoDB depo listi döret
+      echo -ne "${YELLOW}MongoDB depo listi goşulýar...${NC} "
+      if [ "$OS_TYPE" = "ubuntu" ]; then
+        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list > /dev/null 2>&1 || true
+      else 
+        echo "deb http://repo.mongodb.org/apt/debian $(lsb_release -cs)/mongodb-org/6.0 main" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list > /dev/null 2>&1 || true
+      fi
+      echo -e " ${GREEN}✓${NC}"
+      
+      # Depony täzelä
+      echo -ne "${YELLOW}Depolar täzelenýär...${NC} "
+      apt-get update -y > /dev/null 2>&1 || true
+      echo -e " ${GREEN}✓${NC}"
+      
+      # MongoDB gurna
+      echo -e "${YELLOW}MongoDB gurnalyar...${NC}"
+      apt-get install -y mongodb-org > /dev/null 2>&1 || apt-get install -y mongodb > /dev/null 2>&1 || true
+      
+      # Serwis gurulşyny barla
+      if [ ! -f /lib/systemd/system/mongod.service ] && [ ! -f /etc/systemd/system/mongod.service ]; then
+        echo -ne "${YELLOW}MongoDB serwisi döredilýär...${NC} "
+        cat > /etc/systemd/system/mongod.service << EOMONGOSERVICE
+[Unit]
+Description=MongoDB Database Server
+Documentation=https://docs.mongodb.org/manual
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=mongodb
+Group=mongodb
+EnvironmentFile=-/etc/default/mongod
+ExecStart=/usr/bin/mongod --config /etc/mongod.conf
+PIDFile=/var/run/mongodb/mongod.pid
+LimitFSIZE=infinity
+LimitCPU=infinity
+LimitAS=infinity
+LimitNOFILE=64000
+LimitNPROC=64000
+TasksMax=infinity
+
+[Install]
+WantedBy=multi-user.target
+EOMONGOSERVICE
+        echo -e " ${GREEN}✓${NC}"
+      fi
+      
+      # MongoDB serwisini başlat
+      echo -ne "${YELLOW}MongoDB serwisi işledilýär...${NC} "
+      systemctl daemon-reload > /dev/null 2>&1
+      systemctl enable mongod > /dev/null 2>&1 || systemctl enable mongodb > /dev/null 2>&1
+      systemctl start mongod > /dev/null 2>&1 || systemctl start mongodb > /dev/null 2>&1
+      echo -e " ${GREEN}✓${NC}"
+      ;;
+      
+    centos|fedora|rhel)
+      # MongoDB repo faýly
+      echo -ne "${YELLOW}MongoDB depo faýly döredilýär...${NC} "
+      cat > /etc/yum.repos.d/mongodb-org-6.0.repo << EOF
+[mongodb-org-6.0]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/6.0/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc
+EOF
+      echo -e " ${GREEN}✓${NC}"
+      
+      # MongoDB gurna
+      echo -e "${YELLOW}MongoDB gurnalyar...${NC}"
+      yum install -y mongodb-org > /dev/null 2>&1 || true
+      
+      # MongoDB serwisini başlat
+      echo -ne "${YELLOW}MongoDB serwisi işledilýär...${NC} "
+      systemctl daemon-reload > /dev/null 2>&1
+      systemctl enable mongod > /dev/null 2>&1
+      systemctl start mongod > /dev/null 2>&1
+      echo -e " ${GREEN}✓${NC}"
+      ;;
+      
+    *)
+      # Dogry MongoDB gurnamak üçin alternatiw ýol
+      echo -e "${YELLOW}Bu ulgamda awtomatiki MongoDB gurnalyp bilinmedi.${NC}"
+      echo -e "${YELLOW}Alternatiw ýol bilen MongoDB gurnamak synanyşylýar...${NC}"
+      
+      # Basit mongodb kurulumu
+      apt-get update -y > /dev/null 2>&1 || true
+      apt-get install -y mongodb > /dev/null 2>&1 || true
+      
+      if command -v mongod &> /dev/null; then
+        echo -e "${GREEN}MongoDB üstünlikli guruldy!${NC}"
+        systemctl enable mongodb > /dev/null 2>&1 || true
+        systemctl start mongodb > /dev/null 2>&1 || true
+      else
+        echo -e "${RED}MongoDB gurnamak bolmady. Bot SQLite bilen işlejekdir.${NC}"
+      fi
+      ;;
+  esac
+  
+  # Işleýşini barla
+  sleep 5  # MongoDB-niň başlamasy üçin garaş
+  
+  if systemctl is-active --quiet mongod || systemctl is-active --quiet mongodb; then
+    echo -e "${GREEN}MongoDB serweri üstünlikli işledildi!${NC}"
+    return 0
+  else 
+    echo -e "${RED}MongoDB serwerini işledip bolmady. Bot SQLite bilen işlejekdir.${NC}"
+    return 1
+  fi
+}
+
 # Ulgam taýýarlamak
 setup_system() {
   echo -e "${YELLOW}Ulgam täzelenýär we zerur paketler gurnalyar...${NC}"
@@ -245,7 +410,7 @@ setup_system() {
   wait $PID
   
   # Zerur paketleri gurnamak
-  for package in python3 python3-pip python3-venv git screen curl wget bc gnupg; do
+  for package in python3 python3-pip python3-venv git screen curl wget bc gnupg lsb-release python3-dev; do
     echo -ne "${YELLOW}Guralýar: ${CYAN}$package${NC} "
     apt install -y $package > /dev/null 2>&1 &
     PID=$!
@@ -255,35 +420,7 @@ setup_system() {
   done
   
   # MongoDB gurnalyşy
-  echo -e "${YELLOW}MongoDB gurnalyar...${NC}"
-  echo -ne "${YELLOW}MongoDB açar faýly alynýar${NC} "
-  wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add - > /dev/null 2>&1 &
-  PID=$!
-  spin $PID
-  wait $PID
-  echo -e " ${GREEN}✓${NC}"
-  
-  echo -ne "${YELLOW}MongoDB depo listi goşulýar${NC} "
-  echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list > /dev/null 2>&1 &
-  PID=$!
-  spin $PID
-  wait $PID
-  echo -e " ${GREEN}✓${NC}"
-  
-  apt update > /dev/null 2>&1 &
-  PID=$!
-  progress_bar "MongoDB paketleri täzelenýär" $PID 2
-  wait $PID
-  
-  echo -ne "${YELLOW}MongoDB gurnalyşy edilýär${NC} "
-  apt install -y mongodb-org > /dev/null 2>&1 &
-  PID=$!
-  progress_bar "MongoDB gurnalyşy" $PID 5
-  wait $PID
-  echo -e " ${GREEN}✓${NC}"
-  
-  # Ulgam awtomatiki sazlama
-  autofix_all_issues
+  install_mongodb
   
   echo -e "${GREEN}Ulgam taýýarlandy!${NC}"
 }
