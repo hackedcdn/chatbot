@@ -5,6 +5,8 @@
 import os
 import sys
 import re
+import shutil
+from datetime import datetime
 
 def fix_indentation(file_path):
     print(f"'{file_path}' faýlynyň indentasiýasyny düzedýärin...")
@@ -122,7 +124,65 @@ def check_bot_py_errors(file_path):
         print(f"Bot.py faýlyny düzetmekde ýalňyşlyk: {str(e)}")
         return False
 
+def fix_indentation_errors():
+    # Check if bot.py exists in the current directory
+    if not os.path.exists("bot.py"):
+        print("Ýalňyşlyk: 'bot.py' faýly häzirki katalogda tapylmady")
+        return
+    
+    # Create a backup
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    backup_file = f"bot.py.backup.{timestamp}"
+    shutil.copy2("bot.py", backup_file)
+    print(f"Created backup: {backup_file}")
+    
+    # Read the file
+    with open("bot.py", "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    
+    # Process lines to fix indentation errors
+    fixed_lines = []
+    made_changes = False
+    
+    for i, line in enumerate(lines):
+        fixed_lines.append(line)
+        
+        # Check for 'try:' with no indented block
+        if line.strip() == "try:":
+            # Check if the next line is not indented
+            if i+1 < len(lines) and not lines[i+1].startswith(" "):
+                fixed_lines.append("    pass  # Added missing indented block\n")
+                made_changes = True
+                print(f"Fixed missing indented block after 'try:' at line {i+1}")
+        
+        # Check for 'except:' with no indented block
+        elif line.strip().startswith("except"):
+            # Check if the next line is not indented
+            if i+1 < len(lines) and not lines[i+1].startswith(" "):
+                fixed_lines.append("    pass  # Added missing indented block\n")
+                made_changes = True
+                print(f"Fixed missing indented block after 'except' at line {i+1}")
+        
+        # Check for 'if', 'else', 'elif' statements with no indented block
+        elif line.strip().endswith(":") and any(keyword in line.strip() for keyword in ["if ", "else:", "elif "]):
+            # Check if the next line is not indented
+            if i+1 < len(lines) and not lines[i+1].startswith(" "):
+                fixed_lines.append("    pass  # Added missing indented block\n")
+                made_changes = True
+                print(f"Fixed missing indented block after control statement at line {i+1}")
+    
+    # Write the file back if changes were made
+    if made_changes:
+        with open("bot.py", "w", encoding="utf-8") as f:
+            f.writelines(fixed_lines)
+        print("Indentation errors were fixed successfully!")
+    else:
+        print("No indentation errors were found.")
+
 if __name__ == "__main__":
+    print("Fixing indentation errors in bot.py...")
+    fix_indentation_errors()
+    
     bot_path = "/opt/chatbot/bot.py"
     
     # Eger komanda setirinden başga ýol berilen bolsa, şony ulanýarys

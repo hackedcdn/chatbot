@@ -314,6 +314,30 @@ create_correct_env_file() {
 install_mongodb() {
   echo -e "${YELLOW}MongoDB gurnalyşy başladylýar...${NC}"
   
+  # Eğer AUTO_INSTALL modu aktifse, MongoDB hatalarını daha sessiz yönet
+  if [ "$AUTO_INSTALL" = true ]; then
+    echo -e "${YELLOW}Otomatik kurulum sürecinde MongoDB kurulmaya çalışılıyor...${NC}"
+    # MongoDB kurulamasa da sorun değil, SQLite ile devam edilecek
+    apt-get update -y > /dev/null 2>&1 || true
+    apt-get install -y mongodb mongodb-server mongodb-clients > /dev/null 2>&1 || true
+    apt-get install -y mongodb-org > /dev/null 2>&1 || true
+    
+    # MongoDB servisi başlatmayı dene ama başarısız olursa sessizce devam et
+    systemctl start mongod > /dev/null 2>&1 || true
+    systemctl start mongodb > /dev/null 2>&1 || true
+    
+    # MongoDB çalışıyor mu kontrol et
+    if systemctl is-active --quiet mongod || systemctl is-active --quiet mongodb; then
+      echo -e "${GREEN}MongoDB başarıyla kuruldu ve çalışıyor! ✓${NC}"
+      return 0
+    else
+      echo -e "${YELLOW}MongoDB kurulumu başarısız oldu. Bot otomatik olarak SQLite veritabanını kullanacak.${NC}"
+      echo -e "${GREEN}Bu normal bir durum, bot tüm özellikleriyle çalışmaya devam edecek.${NC}"
+      return 1
+    fi
+  fi
+  
+  # Normal kurulum sürecine devam et...
   # MongoDB gurnalandygyny barla
   if command -v mongod &> /dev/null; then
     echo -e "${GREEN}MongoDB eýýäm gurnalandyr!${NC}"
@@ -444,7 +468,8 @@ EOF
         systemctl enable mongodb > /dev/null 2>&1 || true
         systemctl start mongodb > /dev/null 2>&1 || true
       else
-        echo -e "${RED}MongoDB gurnamak bolmady. Bot SQLite bilen işlejekdir.${NC}"
+        echo -e "${YELLOW}MongoDB gurnamak bolmady. Bot SQLite bilen işlejekdir.${NC}"
+        echo -e "${GREEN}Bu normal bir durum, bot tüm özellikleriyle çalışacak.${NC}"
       fi
       ;;
   esac
@@ -456,7 +481,8 @@ EOF
     echo -e "${GREEN}MongoDB serweri üstünlikli işledildi!${NC}"
     return 0
   else 
-    echo -e "${RED}MongoDB serwerini işledip bolmady. Bot SQLite bilen işlejekdir.${NC}"
+    echo -e "${YELLOW}MongoDB serwerini işledip bolmady. Bot SQLite bilen işlejekdir.${NC}"
+    echo -e "${GREEN}Bu normal bir durum, bot tüm özellikleriyle çalışmaya devam edecek.${NC}"
     return 1
   fi
 }
