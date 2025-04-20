@@ -85,13 +85,17 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-echo -e "${GREEN}GÖRKEZME: Bu gurnalyş awtomatiki bolup, diňe bir gezek 'Enter' düwmesine basmak bilen dowam eder.${NC}"
-echo -e "${GREEN}Ýörite gurnalyş sazlamalary isleseňiz, olar düýpli sazlamalardan soň özgerdilip bilner.${NC}"
-echo -e "${GREEN}Aňsat gurnalyş üçin, diňe bir gezek ENTER düwmesine basyň...${NC}"
-read -t 5 -p "" CHOICE
+echo -e "${GREEN}GÖRKEZME: Gurnalyş awtomatiki däl, interaktiw režimde işleýär.${NC}"
+echo -e "${GREEN}Bot tokeni we Admin ID hökmany gerekdir, olary BOTFATHER-den we MYIDBOT-dan alyp bolýar.${NC}"
+echo -e "${GREEN}Gurnalyşy başlatmak üçin ENTER düwmesine basyň...${NC}"
+read -p ""  # Bu ýerde timeout aýyrmaly, ulanyjydan dogry jogap alýança garaşmaly
+
+# Ulgamyň taýýarlygyny gözden geçirmek
+echo -e "${YELLOW}Ulgam taýýarlanýar, biraz garaşyň...${NC}"
 
 # Parametrleri ýygnamak üçin funksiýa
 get_telegram_token() {
+  local token=""
   echo -e "${YELLOW}Telegram Bot Token alynýar...${NC}"
   echo -e "${GREEN}1. https://t.me/BotFather açyň${NC}"
   echo -e "${GREEN}2. /newbot buýrugy bilen täze bot dörediň${NC}"
@@ -103,7 +107,7 @@ get_telegram_token() {
   echo -e "${RED}---------------------------------------------------------------------${NC}"
   read -e -p "Token: " token
   
-  # Boş ýa-da nädogry token barlagy
+  # Ulanyjydan jogap alynýança garaş
   while [[ -z "$token" || "$token" != *":"* ]]; do
     echo -e "${RED}Nädogry format! Token umuman 'xxxxxxx:yyyyyyyyyyy' görnüşinde bolmaly.${NC}"
     echo -e "${YELLOW}Dogry tokeni giriziň ýa-da ${RED}CTRL+C${YELLOW} düwmesine basyp çykyň:${NC}"
@@ -114,6 +118,7 @@ get_telegram_token() {
 }
 
 get_admin_id() {
+  local admin_id=""
   echo -e "${YELLOW}Admin ID alynýar...${NC}"
   echo -e "${GREEN}1. Öz Telegram hasabyňyzda https://t.me/myidbot açyň${NC}"
   echo -e "${GREEN}2. /getid buýrugy iberiň${NC}"
@@ -124,7 +129,7 @@ get_admin_id() {
   echo -e "${RED}---------------------------------------------------------------------${NC}"
   read -e -p "Admin ID: " admin_id
   
-  # Diňe san barlagy
+  # Ulanyjydan jogap alynýança garaş
   while [[ -z "$admin_id" || ! "$admin_id" =~ ^[0-9]+$ ]]; do
     echo -e "${RED}Nädogry format! Admin ID diňe sanlardan ybarat bolmaly.${NC}"
     echo -e "${YELLOW}Dogry ID giriziň ýa-da ${RED}CTRL+C${YELLOW} düwmesine basyp çykyň:${NC}"
@@ -445,6 +450,13 @@ telegram_token=$(get_telegram_token)
 admin_id=$(get_admin_id)
 mongodb_uri="mongodb://localhost:27017"
 db_name="chatbot_db"
+
+# Aýdyň görkeziň, dogrulygyny tassyklatmak üçin
+echo -e "${GREEN}Girilen maglumatlar:${NC}"
+echo -e "${YELLOW}Bot Token:${NC} ${telegram_token}"
+echo -e "${YELLOW}Admin ID:${NC} ${admin_id}"
+echo -e "${GREEN}Bu maglumatlar dogrymy? Dowam etmek üçin ENTER basyň, ýogsa CTRL+C basyp ýatyryň.${NC}"
+read -p ""
 
 # Ulgamy taýýarlamak
 setup_system
