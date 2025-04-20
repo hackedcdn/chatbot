@@ -591,6 +591,15 @@ PID=$!
 progress_bar "Bot kodlary ýüklenýär" $PID 3
 wait $PID
 
+# Indentasiýa ýalňyşlygyny awtomatiki düzet
+echo -ne "${YELLOW}Bot kodundaky indentasiýa näsazlyklary düzedilýär${NC} "
+# 18-nji setirdäki try buýrugynyň indentasiýasyny düzet
+sed -i '19s/^try:$/    from dotenv import load_dotenv/' "$INSTALL_DIR/bot.py" &
+PID=$!
+spin $PID
+wait $PID
+echo -e " ${GREEN}✓${NC}"
+
 # Wirtual gurşaw döret we baglylyky guramalary gurna
 echo -e "${YELLOW}Python wirtual gurşawy döredilýär...${NC}"
 python3 -m venv venv > /dev/null 2>&1 &
