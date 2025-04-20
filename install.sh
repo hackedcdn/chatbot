@@ -95,64 +95,76 @@ echo -e "${YELLOW}Ulgam taýýarlanýar, biraz garaşyň...${NC}"
 
 # Parametrleri ýygnamak üçin funksiýa
 get_telegram_token() {
-  local token=""
-  local token_entered=false
+  # Ekrany arassala
+  clear
   
-  while [ "$token_entered" = false ]; do
-    clear
-    echo -e "${YELLOW}Telegram Bot Token alynýar...${NC}"
-    echo -e "${GREEN}1. https://t.me/BotFather açyň${NC}"
-    echo -e "${GREEN}2. /newbot buýrugy bilen täze bot dörediň${NC}"
-    echo -e "${GREEN}3. Bot adyny we ulanyjy adyny giriziň${NC}"
-    echo -e "${GREEN}4. BotFather-den gelen tokeni göçürip alyň${NC}"
-    echo -e "${RED}---------------------------------------------------------------------${NC}"
-    echo -e "${YELLOW}Botfather-den alnan tokeniňizi ýazyň${NC}"
-    echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
-    echo -e "${RED}---------------------------------------------------------------------${NC}"
-    
-    echo -n "Token: "
-    IFS= read -r token
-    
-    if [[ -n "$token" && "$token" == *":"* ]]; then
-      token_entered=true
+  # WAJYP: Juda wajyp - hiç hili değişken yglan etmäň, diňe giriş SOŇUNDA al
+  echo -e "${YELLOW}------------------------------------${NC}"
+  echo -e "${YELLOW}| TELEGRAM BOT TOKEN GIRIŞ ETMEK |${NC}"
+  echo -e "${YELLOW}------------------------------------${NC}"
+  echo -e "${GREEN}1. https://t.me/BotFather açyň${NC}"
+  echo -e "${GREEN}2. /newbot buýrugy bilen täze bot dörediň${NC}"
+  echo -e "${GREEN}3. Bot adyny we ulanyjy adyny giriziň${NC}"
+  echo -e "${GREEN}4. BotFather-den gelen tokeni göçürip alyň${NC}"
+  echo -e "${RED}==================================================${NC}"
+  echo -e "${YELLOW}Botfather-den alnan tokeniňizi ýazyň:${NC}"
+  echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
+  echo -e "${RED}==================================================${NC}"
+  
+  # Dogry token formatyny duýjak bolýança garaş
+  # WAJYP: Ulanyjy girişini echo-lamaň, ýogsa başga outputlary ýalyşyrys
+  echo -n "TOKEN: " 
+  read MY_TOKEN
+  
+  # Boş token ýa-da nädogry formaty kabul etme
+  while true; do
+    if [[ -n "$MY_TOKEN" && "$MY_TOKEN" == *":"* ]]; then
+      break
     else
-      echo -e "${RED}Nädogry format! Token umuman 'xxxxxxx:yyyyyyyyyyy' görnüşinde bolmaly.${NC}"
-      echo -e "${RED}5 sekuntdan soň täzeden synanyşyň...${NC}"
-      sleep 5
+      echo -e "${RED}Nädogry token formaty. 'xxxxxx:yyyyyy' görnüşinde bolmaly.${NC}"
+      echo -n "TOKEN: " 
+      read MY_TOKEN
     fi
   done
   
-  echo "$token"
+  # Diňe token gaýtar
+  echo "$MY_TOKEN"
 }
 
 get_admin_id() {
-  local admin_id=""
-  local id_entered=false
+  # Ekrany arassala
+  clear
   
-  while [ "$id_entered" = false ]; do
-    clear
-    echo -e "${YELLOW}Admin ID alynýar...${NC}"
-    echo -e "${GREEN}1. Öz Telegram hasabyňyzda https://t.me/myidbot açyň${NC}"
-    echo -e "${GREEN}2. /getid buýrugy iberiň${NC}"
-    echo -e "${GREEN}3. Bot berýän ID belgiňizi göçürip alyň${NC}"
-    echo -e "${RED}---------------------------------------------------------------------${NC}"
-    echo -e "${YELLOW}Öz Telegram ID belgiňizi ýazyň${NC}"
-    echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
-    echo -e "${RED}---------------------------------------------------------------------${NC}"
-    
-    echo -n "Admin ID: "
-    IFS= read -r admin_id
-    
-    if [[ -n "$admin_id" && "$admin_id" =~ ^[0-9]+$ ]]; then
-      id_entered=true
+  # WAJYP: Juda wajyp - hiç hili değişken yglan etmäň, diňe giriş SOŇUNDA al
+  echo -e "${YELLOW}------------------------------------${NC}"
+  echo -e "${YELLOW}| TELEGRAM ADMIN ID GIRIŞ ETMEK |${NC}"
+  echo -e "${YELLOW}------------------------------------${NC}"
+  echo -e "${GREEN}1. Öz Telegram hasabyňyzda https://t.me/myidbot açyň${NC}"
+  echo -e "${GREEN}2. /getid buýrugy iberiň${NC}"
+  echo -e "${GREEN}3. Bot berýän ID belgiňizi göçürip alyň${NC}"
+  echo -e "${RED}==================================================${NC}"
+  echo -e "${YELLOW}Öz Telegram ID belgiňizi ýazyň:${NC}"
+  echo -e "${RED}BU ADYMDA GIRIŞ ETMEGIŇIZ HÖKMAN ZERUR!${NC}"
+  echo -e "${RED}==================================================${NC}"
+  
+  # Dogry admin ID formatyny duýjak bolýança garaş
+  # WAJYP: Ulanyjy girişini echo-lamaň, ýogsa başga outputlary ýalyşyrys
+  echo -n "ADMIN ID: " 
+  read MY_ADMIN_ID
+  
+  # Boş admin ID ýa-da nädogry formaty kabul etme
+  while true; do
+    if [[ -n "$MY_ADMIN_ID" && "$MY_ADMIN_ID" =~ ^[0-9]+$ ]]; then
+      break
     else
-      echo -e "${RED}Nädogry format! Admin ID diňe sanlardan ybarat bolmaly.${NC}"
-      echo -e "${RED}5 sekuntdan soň täzeden synanyşyň...${NC}"
-      sleep 5
+      echo -e "${RED}Nädogry ID formaty. Diňe sanlardan ybarat bolmaly.${NC}"
+      echo -n "ADMIN ID: " 
+      read MY_ADMIN_ID
     fi
   done
   
-  echo "$admin_id"
+  # Diňe admin ID gaýtar
+  echo "$MY_ADMIN_ID"
 }
 
 # Gurnalyş wagtynda ähli näsazlyklary awtomatiki düzet
@@ -243,19 +255,19 @@ create_correct_env_file() {
   echo -e "${YELLOW}Dogry formatda .env faýly döredilýär...${NC}"
   
   # Konfigurasiýa faýly dogry formatda döret
-  echo "BOT_TOKEN=$telegram_token" > "$ENV_FILE"
-  echo "MONGODB_URI=mongodb://localhost:27017" >> "$ENV_FILE"
-  echo "DATABASE_NAME=chatbot_db" >> "$ENV_FILE"
-  echo "ADMIN_ID=$admin_id" >> "$ENV_FILE"
+  echo "BOT_TOKEN=$BOT_TOKEN" > "$ENV_FILE"
+  echo "MONGODB_URI=$mongodb_uri" >> "$ENV_FILE"
+  echo "DATABASE_NAME=$db_name" >> "$ENV_FILE"
+  echo "ADMIN_ID=$ADMIN_ID" >> "$ENV_FILE"
   
   # Faýl rugsat hukuklary düzet
   chmod 644 "$ENV_FILE"
   
   # Barlag ýagdaýda, ".env.test" hem döret 
-  echo "BOT_TOKEN=$telegram_token" > "$INSTALL_DIR/.env.test"
-  echo "MONGODB_URI=mongodb://localhost:27017" >> "$INSTALL_DIR/.env.test"
-  echo "DATABASE_NAME=chatbot_db" >> "$INSTALL_DIR/.env.test"
-  echo "ADMIN_ID=$admin_id" >> "$INSTALL_DIR/.env.test"
+  echo "BOT_TOKEN=$BOT_TOKEN" > "$INSTALL_DIR/.env.test"
+  echo "MONGODB_URI=$mongodb_uri" >> "$INSTALL_DIR/.env.test"
+  echo "DATABASE_NAME=$db_name" >> "$INSTALL_DIR/.env.test"
+  echo "ADMIN_ID=$ADMIN_ID" >> "$INSTALL_DIR/.env.test"
   
   # bot.py faýlyny düzet - .env formaty üýtget, ýalňyşlyk bar bolsa täze .env üçin barla
   if [ -f "$INSTALL_DIR/bot.py" ]; then
@@ -463,34 +475,29 @@ fi
 
 # GURNALYŞ PROSESI BU ÝERDE BAŞLAÝAR
 clear
-echo -e "${YELLOW}TELEGRAM BOT GURNALYŞY BAŞLANÝAR${NC}"
-echo -e "${RED}===================================================${NC}"
+echo -e "${YELLOW}==================================================${NC}"
+echo -e "${GREEN}CHATBOT GURNALYŞY BAŞLANÝAR...${NC}"
+echo -e "${YELLOW}==================================================${NC}"
 
-# Takyk maglumatlar toplany
-echo -e "${YELLOW}Bot tokeni we Admin ID-ni talap edilýär${NC}"
-echo -e "${GREEN}Giriş etmeklige taýýarlanyň...${NC}"
-sleep 2
-
-# Token we ID soralýar
-TOKEN=$(get_telegram_token)
+# Ilki bilen gerekli tokeleri al
+BOT_TOKEN=$(get_telegram_token)
 ADMIN_ID=$(get_admin_id)
 mongodb_uri="mongodb://localhost:27017"
 db_name="chatbot_db"
 
-# Tassyklamak üçin görkezmek
+# Alnany görkezip tassykla 
 clear
-echo -e "${GREEN}===== GIRILEN MAGLUMATLAR =====${NC}"
-echo -e "${YELLOW}Bot Token:${NC} ${TOKEN}"
-echo -e "${YELLOW}Admin ID:${NC} ${ADMIN_ID}"
-echo -e "${YELLOW}MongoDB URI:${NC} ${mongodb_uri}"
-echo -e "${YELLOW}Database:${NC} ${db_name}"
-echo -e "${RED}===================================================${NC}"
-echo -e "${GREEN}Bu maglumatlar dogrymy? Dowam etmek üçin ENTER basyň, ýogsa CTRL+C basyp ýatyryň.${NC}"
+echo -e "${YELLOW}==================================================${NC}"
+echo -e "${GREEN}GIRILEN MAGLUMATLAR:${NC}"
+echo -e "${YELLOW}Bot Token:${NC} $BOT_TOKEN"
+echo -e "${YELLOW}Admin ID:${NC} $ADMIN_ID"
+echo -e "${YELLOW}MongoDB URI:${NC} $mongodb_uri"
+echo -e "${YELLOW}Database:${NC} $db_name"
+echo -e "${YELLOW}==================================================${NC}"
+echo -e "${GREEN}Bu maglumatlar dogrymy? Dowam etmek üçin ENTER basyň...${NC}"
 read -r
 
 # Gurnalyş üçin değişkenleri nizamla
-telegram_token="$TOKEN"
-admin_id="$ADMIN_ID"
 
 # Ulgamy taýýarlamak
 setup_system
@@ -545,22 +552,22 @@ if [ -f "$INSTALL_DIR/.env" ]; then
   cat "$INSTALL_DIR/.env"
 else
   # Ýönekeý usul bilen täzeden döret
-  echo "BOT_TOKEN=$telegram_token" > $INSTALL_DIR/.env
+  echo "BOT_TOKEN=$BOT_TOKEN" > $INSTALL_DIR/.env
   echo "MONGODB_URI=mongodb://localhost:27017" >> $INSTALL_DIR/.env
-  echo "DATABASE_NAME=chatbot_db" >> $INSTALL_DIR/.env
-  echo "ADMIN_ID=$admin_id" >> $INSTALL_DIR/.env
+  echo "DATABASE_NAME=$db_name" >> $INSTALL_DIR/.env
+  echo "ADMIN_ID=$ADMIN_ID" >> $INSTALL_DIR/.env
   echo -e "${YELLOW}Konfigurasiýa faýly standart formatda döredildi.${NC}"
 fi
 
 # Aýdyňlaşdyryjy habar - awtomatiki işlemeýän ýagdaýda 
-if [ "$telegram_token" = "TOKEN_PLACEHOLDER" ] || [ "$admin_id" = "123456789" ]; then
+if [ "$BOT_TOKEN" = "TOKEN_PLACEHOLDER" ] || [ "$ADMIN_ID" = "123456789" ]; then
   echo -e "${YELLOW}╔════════════════════════════════════════════════╗${NC}"
   echo -e "${YELLOW}║       WAJYP KONFIGURASIÝA MAGLUMATLARY         ║${NC}"
   echo -e "${YELLOW}║                                                ║${NC}"
-  if [ "$telegram_token" = "TOKEN_PLACEHOLDER" ]; then
+  if [ "$BOT_TOKEN" = "TOKEN_PLACEHOLDER" ]; then
     echo -e "${YELLOW}║  ${RED}• Bot tokeni girizilmedi!${NC}                    ║${NC}"
   fi
-  if [ "$admin_id" = "123456789" ]; then
+  if [ "$ADMIN_ID" = "123456789" ]; then
     echo -e "${YELLOW}║  ${RED}• Admin ID girizilmedi!${NC}                      ║${NC}"
   fi
   echo -e "${YELLOW}║                                                ║${NC}"
