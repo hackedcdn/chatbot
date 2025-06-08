@@ -1,6 +1,5 @@
 # ChatBot - Turkmenistan üçin Telegram boty 🤖
 
-
 ChatBot, Telegram gruplaryny dolandyrmak üçin Türkmençe dilli çözgütdir. Turkmenistan üçin ýörite taýýarlanan bu bot bilen gruplarynyz aňsat we täsirli usulda dolandyryp bilersiňiz.
 
 ## Aýratynlyklar ✨
